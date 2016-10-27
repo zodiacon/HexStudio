@@ -4,7 +4,8 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:HexStudio.Views"
-             mc:Ignorable="d" 
+             xmlns:c="clr-namespace:HexStudio.Controls"
+             mc:Ignorable="d" x:Name="This"
              d:DesignHeight="300" d:DesignWidth="300">
     <Grid>
         <Grid.RowDefinitions>
@@ -15,7 +16,9 @@
         </Grid.RowDefinitions>
         <Menu>
             <MenuItem Header="_File">
-                <MenuItem Header="_Open..." Command="{Binding OpenCommand}" />
+                <MenuItem Header="_Open..." Command="{Binding OpenFileCommand}" />
+                <Separator />
+                <MenuItem Header="E_xit" Command="{Binding ExitCommand}" />
             </MenuItem>
             <MenuItem Header="_Edit">
                 <MenuItem Header="_Copy" Command="{Binding CopyCommand}" />
@@ -24,8 +27,37 @@
         <StackPanel Orientation="Horizontal" Grid.Row="1">
             
         </StackPanel>
-        <TabControl Grid.Row="2" ItemsSource="{Binding OpenFiles}">
-            
+        <TabControl Grid.Row="2" ItemsSource="{Binding OpenFiles}" SelectedItem="{Binding SelectedFile, Mode=TwoWay}">
+            <TabControl.ItemContainerStyle>
+                <Style TargetType="TabItem">
+                    <Setter Property="MinWidth" Value="60" />
+                    <Setter Property="MaxWidth" Value="300" />
+                    <Setter Property="HeaderTemplate">
+                        <Setter.Value>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <Image Source="/icons/file.ico" Width="20" Height="20"/>
+                                    <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Margin="4,0,0,0" />
+                                    <Button Margin="8,0,0,0" BorderThickness="0" Background="Transparent" 
+                                            Command="{Binding DataContext.CloseTabCommand, ElementName=This}" CommandParameter="{Binding DataContext.SelectedFile, ElementName=This}">
+                                        <Image Source="/icons/close.ico" Width="16" Height="16" />
+                                    </Button>
+                                </StackPanel>
+                            </DataTemplate>
+                        </Setter.Value>
+                    </Setter>
+                    <Style.Triggers>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter Property="FontWeight" Value="Bold" />
+                        </Trigger>
+                    </Style.Triggers>
+                </Style>
+            </TabControl.ItemContainerStyle>
+            <TabControl.ContentTemplate>
+                <DataTemplate>
+                    <local:OpenFileView />
+                </DataTemplate>
+            </TabControl.ContentTemplate>
         </TabControl>
         <StatusBar Grid.Row="3">
             

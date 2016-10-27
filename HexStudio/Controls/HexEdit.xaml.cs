@@ -30,6 +30,8 @@ namespace HexStudio.Controls {
 		long _startOffset, _endOffset;
 		Dictionary<long, Point> _offsetsPositions = new Dictionary<long, Point>(128);
 		Dictionary<int, long> _verticalPositions = new Dictionary<int, long>(128);
+		Dictionary<long, EditChange> _changes = new Dictionary<long, EditChange>(128);
+
 		double _charWidth;
 		int _viewLines;
 		//long _totalLines;
@@ -49,7 +51,7 @@ namespace HexStudio.Controls {
 				_caret.Visibility = _caret.Visibility == Visibility.Collapsed ? Visibility.Visible : Visibility.Collapsed;
 		}
 
-		
+
 		public string Filename {
 			get { return (string)GetValue(FilenameProperty); }
 			set { SetValue(FilenameProperty, value); }
@@ -79,6 +81,8 @@ namespace HexStudio.Controls {
 		private void OnCaretOffsetChanged(DependencyPropertyChangedEventArgs e) {
 			SetCaretPosition(CaretOffset);
 			MakeVisible(CaretOffset);
+			_inputIndex = 0;
+			_lastValue = 0;
 		}
 
 		private void SetCaretPosition(long caretOffset) {
@@ -110,7 +114,7 @@ namespace HexStudio.Controls {
 		}
 
 		public static readonly DependencyProperty BytesPerLineProperty =
-			 DependencyProperty.Register(nameof(BytesPerLine), typeof(int), typeof(HexEdit), new PropertyMetadata(64, (s, e) => ((HexEdit)s).Refresh()), ValidateBytesPerLine);
+			 DependencyProperty.Register(nameof(BytesPerLine), typeof(int), typeof(HexEdit), new PropertyMetadata(32, (s, e) => ((HexEdit)s).Refresh()), ValidateBytesPerLine);
 
 		private static bool ValidateBytesPerLine(object value) {
 			var bytes = (int)value;
@@ -141,7 +145,7 @@ namespace HexStudio.Controls {
 		}
 
 		public static readonly DependencyProperty SelectionBackgroundProperty =
-			 DependencyProperty.Register("SelectionBackground", typeof(Brush), typeof(HexEdit), 
+			 DependencyProperty.Register("SelectionBackground", typeof(Brush), typeof(HexEdit),
 				 new FrameworkPropertyMetadata(Brushes.Yellow, FrameworkPropertyMetadataOptions.AffectsRender));
 
 
@@ -151,8 +155,27 @@ namespace HexStudio.Controls {
 		}
 
 		public static readonly DependencyProperty SelectionForegroundProperty =
-			 DependencyProperty.Register("SelectionForeground", typeof(Brush), typeof(HexEdit), 
+			 DependencyProperty.Register("SelectionForeground", typeof(Brush), typeof(HexEdit),
 				 new FrameworkPropertyMetadata(Brushes.Black, FrameworkPropertyMetadataOptions.AffectsRender));
+
+		public bool IsReadOnly {
+			get { return (bool)GetValue(IsReadOnlyProperty); }
+			set { SetValue(IsReadOnlyProperty, value); }
+		}
+
+		public static readonly DependencyProperty IsReadOnlyProperty =
+			 DependencyProperty.Register("IsReadOnly", typeof(bool), typeof(HexEdit), new PropertyMetadata(false));
+
+
+
+		public bool IsModified {
+			get { return (bool)GetValue(IsModifiedProperty); }
+			private set { SetValue(IsModifiedProperty, value); }
+		}
+
+		public static readonly DependencyProperty IsModifiedProperty =
+			 DependencyProperty.Register(nameof(IsModified), typeof(bool), typeof(HexEdit), new PropertyMetadata(false));
+
 
 		private static bool ValidateWordSize(object value) {
 			var wordSize = (int)value;
@@ -206,7 +229,6 @@ namespace HexStudio.Controls {
 			var y = -_scroll.Value;
 			var viewport = _scroll.ViewportSize;
 			long start = (long)(BytesPerLine * (0 - VerticalSpace - y) / lineHeight);
-			_startOffset = start;
 
 			if (start < 0)
 				start = 0;
@@ -226,15 +248,15 @@ namespace HexStudio.Controls {
 			}
 
 			var x = maxWidth + 8;
-			var bitConverter = _bitConverters[_bitConverterIndex[WordSize]];
 
 			var buf = new byte[end - start + 1];
 			var read = _accessor.ReadArray(start, buf, 0, buf.Length);
 			if (start + read < end)
 				end = start + read;
-			_endOffset = end;
 
-			var sb = new StringBuilder(256);
+			var sb = new StringBuilder(256); // entire row
+			var changed_sb = new StringBuilder(256);     // changes
+
 			_hexDataXPos = x;
 
 			var singleChar = new FormattedText("8", CultureInfo.InvariantCulture, FlowDirection.LeftToRight, typeface, FontSize, Foreground);
@@ -244,16 +266,33 @@ namespace HexStudio.Controls {
 			_offsetsPositions.Clear();
 			_verticalPositions.Clear();
 
+			var bitConverter = _bitConverters[_bitConverterIndex[WordSize]];
 			_viewLines = 0;
+			var space = new string(' ', WordSize * 2 + 1);
+
 			for (long i = start; i < end; i += BytesPerLine) {
 				var pos = 2 + (i / BytesPerLine) * lineHeight + y;
 				sb.Clear();
-				for (var j = i; j < i + BytesPerLine && j < end; j += WordSize)
-					sb.Append(bitConverter(buf, (int)(j - start))).Append(" ");
+				changed_sb.Clear();
+
+				for (var j = i; j < i + BytesPerLine && j < end; j += WordSize) {
+					if (_changes.ContainsKey(j)) {
+						changed_sb.Append(_changes[j].Value.ToString("X" + (WordSize * 2).ToString())).Append(" ");
+						sb.Append(space);
+					}
+					else {
+						sb.Append(bitConverter(buf, (int)(j - start))).Append(" ");
+						changed_sb.Append(space);
+					}
+				}
 
 				var pt = new Point(x, pos);
+
 				var text = new FormattedText(sb.ToString(), CultureInfo.InvariantCulture, FlowDirection.LeftToRight, typeface, FontSize, Foreground);
 				dc.DrawText(text, pt);
+				text = new FormattedText(changed_sb.ToString(), CultureInfo.InvariantCulture, FlowDirection.LeftToRight, typeface, FontSize, Brushes.Red);
+				dc.DrawText(text, pt);
+
 				_offsetsPositions[i] = pt;
 				_verticalPositions[(int)pt.Y] = i;
 
@@ -267,6 +306,9 @@ namespace HexStudio.Controls {
 				// draw current selection
 
 			}
+
+			_endOffset = end;
+			_startOffset = start;
 
 			SetCaretPosition(CaretOffset);
 		}
@@ -320,9 +362,48 @@ namespace HexStudio.Controls {
 					case Key.Left:
 						CaretOffset--;
 						break;
+					case Key.PageDown:
+						CaretOffset += BytesPerLine * _viewLines;
+						break;
+					case Key.PageUp:
+						CaretOffset -= BytesPerLine * _viewLines;
+						break;
+
+					default:
+						HandleTextEdit(e);
+						break;
 				}
 			}
 			e.Handled = true;
+		}
+
+		int _inputIndex = 0;
+		ulong _lastValue = 0;
+		EditChange _currentChange;
+
+		private void HandleTextEdit(KeyEventArgs e) {
+			if (IsReadOnly) return;
+
+			if ((e.Key < Key.D0 || e.Key > Key.D9) && (e.Key < Key.A || e.Key > Key.F))
+				return;
+
+			// make a change
+			byte value = e.Key >= Key.A ? (byte)(e.Key - Key.A + 10) : (byte)(e.Key - Key.D0);
+			_lastValue = _lastValue * 16 + value;
+
+			if (!IsModified)
+				IsModified = true;
+
+			if (_inputIndex == 0) {
+				_currentChange = new EditChange { Offset = CaretOffset, Value = _lastValue };
+				_changes[CaretOffset] = _currentChange;
+			}
+			if (++_inputIndex == WordSize * 2) {
+				_currentChange.Value = _lastValue;
+				_currentChange = null;
+				CaretOffset++;
+			}
+			InvalidateVisual();
 		}
 
 		public void MakeVisible(long offset) {
