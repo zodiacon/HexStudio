@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace HexStudio.Controls {
 	class EditChange : IEqualityComparer<EditChange>, IComparable<EditChange> {
 		public long Offset { get; set; }
-		public ulong Value { get; set; }
+		public byte Value { get; set; }
 
 		public int CompareTo(EditChange other) {
 			return Offset.CompareTo(other.Offset);

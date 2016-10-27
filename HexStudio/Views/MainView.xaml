@@ -5,8 +5,15 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:HexStudio.Views"
              xmlns:c="clr-namespace:HexStudio.Controls"
+             xmlns:vm="clr-namespace:HexStudio.ViewModels"
+             xmlns:root="clr-namespace:HexStudio"
              mc:Ignorable="d" x:Name="This"
              d:DesignHeight="300" d:DesignWidth="300">
+    <UserControl.Resources>
+        <DataTemplate x:Key="FileViewKey" >
+            <local:OpenFileView />
+        </DataTemplate>
+    </UserControl.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -27,7 +34,8 @@
         <StackPanel Orientation="Horizontal" Grid.Row="1">
             
         </StackPanel>
-        <TabControl Grid.Row="2" ItemsSource="{Binding OpenFiles}" SelectedItem="{Binding SelectedFile, Mode=TwoWay}">
+        <TabControl Grid.Row="2" ItemsSource="{Binding OpenFiles}" SelectedItem="{Binding SelectedFile, Mode=TwoWay}" 
+                    root:TabControlProperties.IsCached="True" root:TabControlProperties.Template="{StaticResource FileViewKey}">
             <TabControl.ItemContainerStyle>
                 <Style TargetType="TabItem">
                     <Setter Property="MinWidth" Value="60" />
@@ -53,11 +61,7 @@
                     </Style.Triggers>
                 </Style>
             </TabControl.ItemContainerStyle>
-            <TabControl.ContentTemplate>
-                <DataTemplate>
-                    <local:OpenFileView />
-                </DataTemplate>
-            </TabControl.ContentTemplate>
+            
         </TabControl>
         <StatusBar Grid.Row="3">
             

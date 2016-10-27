@@ -76,6 +76,7 @@
     <Compile Include="Controls\EditChange.cs" />
     <Compile Include="Converters\RgbColorToBrushConverter.cs" />
     <Compile Include="Models\RgbColor.cs" />
+    <Compile Include="TabControlProperties.cs" />
     <Compile Include="ViewModels\MainViewModel.cs" />
     <Compile Include="ViewModels\OpenFileViewModel.cs" />
     <Compile Include="Views\MainView.xaml.cs">

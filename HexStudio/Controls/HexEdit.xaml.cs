@@ -31,7 +31,6 @@ namespace HexStudio.Controls {
 		Dictionary<long, Point> _offsetsPositions = new Dictionary<long, Point>(128);
 		Dictionary<int, long> _verticalPositions = new Dictionary<int, long>(128);
 		Dictionary<long, EditChange> _changes = new Dictionary<long, EditChange>(128);
-
 		double _charWidth;
 		int _viewLines;
 		//long _totalLines;
@@ -81,7 +80,7 @@ namespace HexStudio.Controls {
 		private void OnCaretOffsetChanged(DependencyPropertyChangedEventArgs e) {
 			SetCaretPosition(CaretOffset);
 			MakeVisible(CaretOffset);
-			_inputIndex = 0;
+			_inputIndex = _wordIndex = 0;
 			_lastValue = 0;
 		}
 
@@ -194,6 +193,10 @@ namespace HexStudio.Controls {
 		private void Refresh() {
 			Recalculate();
 			InvalidateVisual();
+			if (CaretOffset >= 0) {
+				CaretOffset = CaretOffset - CaretOffset % WordSize;
+				SetCaretPosition(CaretOffset);
+			}
 		}
 
 		private void OnFilenameChanged(DependencyPropertyChangedEventArgs e) {
@@ -223,6 +226,8 @@ namespace HexStudio.Controls {
 
 		protected override void OnRender(DrawingContext dc) {
 			if (_accessor == null || _size == 0 || ActualHeight < 1) return;
+
+			dc.PushClip(new RectangleGeometry(new Rect(0, 0, ActualWidth, ActualHeight)));
 
 			var typeface = new Typeface(FontFamily, FontStyle, FontWeight, FontStretch);
 			int lineHeight = (int)(FontSize + VerticalSpace);
@@ -260,7 +265,6 @@ namespace HexStudio.Controls {
 			_hexDataXPos = x;
 
 			var singleChar = new FormattedText("8", CultureInfo.InvariantCulture, FlowDirection.LeftToRight, typeface, FontSize, Foreground);
-			_charWidth = singleChar.Width;
 
 			maxWidth = 0;
 			_offsetsPositions.Clear();
@@ -269,6 +273,8 @@ namespace HexStudio.Controls {
 			var bitConverter = _bitConverters[_bitConverterIndex[WordSize]];
 			_viewLines = 0;
 			var space = new string(' ', WordSize * 2 + 1);
+			EditChange change;
+			int len = 0;
 
 			for (long i = start; i < end; i += BytesPerLine) {
 				var pos = 2 + (i / BytesPerLine) * lineHeight + y;
@@ -276,12 +282,20 @@ namespace HexStudio.Controls {
 				changed_sb.Clear();
 
 				for (var j = i; j < i + BytesPerLine && j < end; j += WordSize) {
-					if (_changes.ContainsKey(j)) {
-						changed_sb.Append(_changes[j].Value.ToString("X" + (WordSize * 2).ToString())).Append(" ");
+					int bufIndex = (int)(j - start);
+					bool changed = false;
+					for(int k = 0; k < WordSize; k++) {
+						if (_changes.TryGetValue(j + k, out change)) {
+							buf[bufIndex + k] = change.Value;
+							changed = true;
+						}
+					}
+					if (changed) {
+						changed_sb.Append(bitConverter(buf, bufIndex)).Append(" ");
 						sb.Append(space);
 					}
 					else {
-						sb.Append(bitConverter(buf, (int)(j - start))).Append(" ");
+						sb.Append(bitConverter(buf, bufIndex)).Append(" ");
 						changed_sb.Append(space);
 					}
 				}
@@ -289,18 +303,60 @@ namespace HexStudio.Controls {
 				var pt = new Point(x, pos);
 
 				var text = new FormattedText(sb.ToString(), CultureInfo.InvariantCulture, FlowDirection.LeftToRight, typeface, FontSize, Foreground);
+				if (len == 0)
+					len = sb.Length;
+
 				dc.DrawText(text, pt);
+				if (text.WidthIncludingTrailingWhitespace > maxWidth) {
+					maxWidth = text.WidthIncludingTrailingWhitespace;
+					if (_charWidth < 1) {
+						_charWidth = maxWidth / len;
+					}
+				}
+
 				text = new FormattedText(changed_sb.ToString(), CultureInfo.InvariantCulture, FlowDirection.LeftToRight, typeface, FontSize, Brushes.Red);
 				dc.DrawText(text, pt);
+				if (text.Width > maxWidth)
+					maxWidth = text.Width;
 
 				_offsetsPositions[i] = pt;
 				_verticalPositions[(int)pt.Y] = i;
 
-				if (text.Width > maxWidth)
-					maxWidth = text.Width;
 				_viewLines++;
 			}
+
 			_hexDataWidth = maxWidth;
+
+			x = _hexDataXPos + _hexDataWidth + 10;
+			maxWidth = 0;
+			char ch;
+
+			for (long i = start; i < end; i += BytesPerLine) {
+				var pos = 2 + (i / BytesPerLine) * lineHeight + y;
+				sb.Clear();
+				changed_sb.Clear();
+
+				for (var j = i; j < i + BytesPerLine && j < end; j++) {
+					if (_changes.TryGetValue(j, out change)) {
+						ch = (char)change.Value;
+						changed_sb.Append(char.IsControl(ch) ? '.' : ch);
+						sb.Append(' ');
+					}
+					else {
+						ch = Encoding.ASCII.GetChars(buf, (int)(j - start), 1)[0];
+						sb.Append(char.IsControl(ch) ? '.' : ch);
+						changed_sb.Append(' ');
+					}
+				}
+
+				var pt = new Point(x, pos);
+
+				var text = new FormattedText(sb.ToString(), CultureInfo.InvariantCulture, FlowDirection.LeftToRight, typeface, FontSize, Foreground);
+				dc.DrawText(text, pt);
+
+				text = new FormattedText(changed_sb.ToString(), CultureInfo.InvariantCulture, FlowDirection.LeftToRight, typeface, FontSize, Brushes.Red);
+				dc.DrawText(text, pt);
+			}
 
 			if (SelectionStart >= 0) {
 				// draw current selection
@@ -310,25 +366,29 @@ namespace HexStudio.Controls {
 			_endOffset = end;
 			_startOffset = start;
 
-			SetCaretPosition(CaretOffset);
+			dc.Pop();
+
 		}
 
 		Point GetPositionByOffset(long offset) {
-			var offset2 = offset / BytesPerLine * BytesPerLine;
-			Point pt;
-			if (_offsetsPositions.TryGetValue(offset2, out pt)) {
-				return new Point(pt.X + (offset - offset2) * _charWidth * (WordSize * 2 + 1), pt.Y);
+			if (offset >= 0) {
+				var offset2 = offset / BytesPerLine * BytesPerLine;
+				Point pt;
+				if (_offsetsPositions.TryGetValue(offset2, out pt)) {
+					return new Point(pt.X + (offset - offset2) * _charWidth * (WordSize * 2 + 1) / WordSize, pt.Y);
+				}
 			}
 			return new Point(-100, -100);
 		}
 
 		long GetOffsetByCursorPosition(Point pt) {
+			var xp = pt.X - _hexDataXPos;
 			long offset;
 			var y = (int)pt.Y;
 			while (!_verticalPositions.TryGetValue(y, out offset))
 				y--;
-			var x = (int)(pt.X / (WordSize * 2 + 1)) * (WordSize * 2 + 1);
-			return offset + (long)((x - _hexDataXPos) / (_charWidth * (WordSize * 2 + 1)));
+			int x = (int)(xp / (_charWidth * (WordSize * 2 + 1))) * WordSize;
+			return offset + x;
 		}
 
 		private void This_SizeChanged(object sender, SizeChangedEventArgs e) {
@@ -377,8 +437,8 @@ namespace HexStudio.Controls {
 			e.Handled = true;
 		}
 
-		int _inputIndex = 0;
-		ulong _lastValue = 0;
+		int _inputIndex = 0, _wordIndex = 0;
+		byte _lastValue = 0;
 		EditChange _currentChange;
 
 		private void HandleTextEdit(KeyEventArgs e) {
@@ -389,19 +449,23 @@ namespace HexStudio.Controls {
 
 			// make a change
 			byte value = e.Key >= Key.A ? (byte)(e.Key - Key.A + 10) : (byte)(e.Key - Key.D0);
-			_lastValue = _lastValue * 16 + value;
+			_lastValue = (byte)(_lastValue * 16 + value);
 
 			if (!IsModified)
 				IsModified = true;
 
 			if (_inputIndex == 0) {
-				_currentChange = new EditChange { Offset = CaretOffset, Value = _lastValue };
-				_changes[CaretOffset] = _currentChange;
+				_currentChange = new EditChange { Offset = CaretOffset + _wordIndex };
+				_changes[CaretOffset + _wordIndex] = _currentChange;
 			}
-			if (++_inputIndex == WordSize * 2) {
-				_currentChange.Value = _lastValue;
+			_currentChange.Value = _lastValue;
+			if (++_inputIndex == 2) {
 				_currentChange = null;
-				CaretOffset++;
+				_inputIndex = 0;
+				if (++_wordIndex == WordSize) {
+					CaretOffset += WordSize;
+					_wordIndex = 0;
+				}
 			}
 			InvalidateVisual();
 		}

@@ -28,12 +28,17 @@
 
                 </Style>
             </StackPanel.Resources>
-            <RadioButton Content="1" IsChecked="{Binding Is1Byte}" />
-            <RadioButton Content="2" IsChecked="{Binding Is2Byte}" />
+            
+            <RadioButton Content="1" IsChecked="{Binding Is1Byte}" GroupName="Chunk" />
+            <RadioButton Content="2" IsChecked="{Binding Is2Byte}" GroupName="Chunk" />
+            <RadioButton Content="4" IsChecked="{Binding Is4Byte}" GroupName="Chunk" />
+            <RadioButton Content="8" IsChecked="{Binding Is8Byte}" GroupName="Chunk" />
+            
         </StackPanel>
         
         <c:HexEdit Margin="2" Grid.Row="1" IsReadOnly="{Binding IsReadOnly}" Filename="{Binding FileName}" FontSize="{Binding Settings.FontSize}"
                    Foreground="{Binding Settings.TextForeground, Converter={StaticResource colorToBrushConverter}}"
+                   WordSize="{Binding WordSize}"
                    />
     </Grid>
 </UserControl>
