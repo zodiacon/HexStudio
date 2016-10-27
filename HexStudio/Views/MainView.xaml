@@ -6,6 +6,7 @@
              xmlns:local="clr-namespace:HexStudio.Views"
              xmlns:c="clr-namespace:HexStudio.Controls"
              xmlns:vm="clr-namespace:HexStudio.ViewModels"
+             xmlns:z="http://zodiacon.wpf/2016"
              xmlns:root="clr-namespace:HexStudio"
              mc:Ignorable="d" x:Name="This"
              d:DesignHeight="300" d:DesignWidth="300">
@@ -21,14 +22,31 @@
             <RowDefinition />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
-        <Menu>
-            <MenuItem Header="_File">
-                <MenuItem Header="_Open..." Command="{Binding OpenFileCommand}" />
+        <Menu z:InputHelper.AttachInputBindings="True">
+            <MenuItem Header="_File" >
+                <MenuItem Header="_Open..." Command="{Binding OpenFileCommand}" InputGestureText="Ctrl+O" Icon="{z:Image /icons/open.ico, Width=20, Height=20}"/>
+                <MenuItem Header="_Save" InputGestureText="Ctrl+S" Command="{Binding SelectedFile.SaveFileCommand, FallbackValue={x:Static vm:MainViewModel.EmptyCommand}}" Icon="{z:Image /icons/save.ico, Width=20, Height=20}"/>
+                <MenuItem Header="Save _As..." Icon="{z:Image /icons/save_as.ico, Width=20, Height=20}" Command="{Binding SelectedFile.SaveAsFileCommand, FallbackValue={x:Static vm:MainViewModel.EmptyCommand}}" />
+                <MenuItem Header="Revert" Icon="{z:Image /icons/recycle.ico, Width=20, Height=20}" Command="{Binding SelectedFile.RevertFileCommand, FallbackValue={x:Static vm:MainViewModel.EmptyCommand}}" />
+                <Separator />
+                <MenuItem Header="_Close" InputGestureText="Ctrl+F4" Command="{Binding SelectedFile.CloseCommand, FallbackValue={x:Static vm:MainViewModel.EmptyCommand}}" />
+                <MenuItem Header="Close All" Command="{Binding CloseAllCommand}" />
                 <Separator />
                 <MenuItem Header="E_xit" Command="{Binding ExitCommand}" />
             </MenuItem>
             <MenuItem Header="_Edit">
-                <MenuItem Header="_Copy" Command="{Binding CopyCommand}" />
+                <MenuItem Header="_Undo" Icon="{z:Image /icons/undo.ico, Width=20, Height=20}" Command="Undo" />
+                <MenuItem Header="_Redo" Icon="{z:Image /icons/redo.ico, Width=20, Height=20}" Command="Redo" />
+                <Separator />
+                <MenuItem Header="_Copy" Icon="{z:Image /icons/copy.ico, Width=20, Height=20}" Command="Copy" />
+                <MenuItem Header="C_ut" Icon="{z:Image /icons/cut.ico, Width=20, Height=20}" Command="Cut" />
+                <MenuItem Header="_Paste" Icon="{z:Image /icons/paste.ico, Width=20, Height=20}" Command="Paste" />
+                <Separator />
+                <MenuItem Header="_Find..." InputGestureText="Ctrl+F" Icon="{z:Image /icons/find.ico, Width=20, Height=20}" 
+                          Command="{Binding SelectedFile.FindCommand, FallbackValue={x:Static vm:MainViewModel.EmptyCommand}}" />
+            </MenuItem>
+            <MenuItem Header="_Options">
+                <MenuItem Header="_Always On Top" IsCheckable="True" IsChecked="{Binding Settings.IsAlwaysOnTop}" />
             </MenuItem>
         </Menu>
         <StackPanel Orientation="Horizontal" Grid.Row="1">
@@ -47,7 +65,7 @@
                                     <Image Source="/icons/file.ico" Width="20" Height="20"/>
                                     <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Margin="4,0,0,0" />
                                     <Button Margin="8,0,0,0" BorderThickness="0" Background="Transparent" 
-                                            Command="{Binding DataContext.CloseTabCommand, ElementName=This}" CommandParameter="{Binding DataContext.SelectedFile, ElementName=This}">
+                                            Command="{Binding CloseCommand}" >
                                         <Image Source="/icons/close.ico" Width="16" Height="16" />
                                     </Button>
                                 </StackPanel>

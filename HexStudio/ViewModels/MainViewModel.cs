@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -23,6 +24,8 @@ namespace HexStudio.ViewModels {
 
 		public IFileDialogService FileDialogService => UIServices.FileDialogService;
 		public IMessageBoxService MessageBoxService => UIServices.MessageBoxService;
+
+		public static ICommand EmptyCommand = new DelegateCommand(() => { }, () => false);
 
 		public IList<OpenFileViewModel> OpenFiles => _openFiles;
 
@@ -45,8 +48,19 @@ namespace HexStudio.ViewModels {
 			OpenFileInternal(filename);
 		});
 
+		public void CloseFile(OpenFileViewModel file) {
+			int index = OpenFiles.IndexOf(file);
+			Debug.Assert(index >= 0);
+			file.Dispose();
+			OpenFiles.RemoveAt(index);
+			if (--index < 0)
+				index = 0;
+			if (OpenFiles.Count > 0)
+				SelectedFile = OpenFiles[index];
+		}
+
 		private void OpenFileInternal(string filename) {
-			var file = new OpenFileViewModel(filename);
+			var file = new OpenFileViewModel(this, filename);
 			OpenFiles.Add(file);
 			SelectedFile = file;
 		}

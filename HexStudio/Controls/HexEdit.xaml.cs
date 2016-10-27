@@ -21,7 +21,7 @@ namespace HexStudio.Controls {
 	/// <summary>
 	/// Interaction logic for HexEdit.xaml
 	/// </summary>
-	public partial class HexEdit {
+	public partial class HexEdit : IDisposable {
 		MemoryMappedFile _memFile;
 		MemoryMappedViewAccessor _accessor;
 		long _size;
@@ -169,7 +169,7 @@ namespace HexStudio.Controls {
 
 		public bool IsModified {
 			get { return (bool)GetValue(IsModifiedProperty); }
-			private set { SetValue(IsModifiedProperty, value); }
+			set { SetValue(IsModifiedProperty, value); }
 		}
 
 		public static readonly DependencyProperty IsModifiedProperty =
@@ -200,10 +200,7 @@ namespace HexStudio.Controls {
 		}
 
 		private void OnFilenameChanged(DependencyPropertyChangedEventArgs e) {
-			if (_accessor != null)
-				_accessor.Dispose();
-			if (_memFile != null)
-				_memFile.Dispose();
+			Dispose();
 
 			var filename = (string)e.NewValue;
 			_size = 0;
@@ -254,7 +251,8 @@ namespace HexStudio.Controls {
 
 			var x = maxWidth + 8;
 
-			var buf = new byte[end - start + 1];
+			var buf = new byte[end - start + 1 + 7];		// spare bytes
+
 			var read = _accessor.ReadArray(start, buf, 0, buf.Length);
 			if (start + read < end)
 				end = start + read;
@@ -284,7 +282,13 @@ namespace HexStudio.Controls {
 				for (var j = i; j < i + BytesPerLine && j < end; j += WordSize) {
 					int bufIndex = (int)(j - start);
 					bool changed = false;
-					for(int k = 0; k < WordSize; k++) {
+
+					if (j >= SelectionStart && j <= SelectionEnd) {
+						// j is selected
+						dc.DrawRectangle(SelectionBackground, null, new Rect(x + (j - i) / WordSize * (2 * WordSize + 1) * _charWidth, pos, _charWidth * WordSize * 2, FontSize));
+					}
+
+					for (int k = 0; k < WordSize; k++) {
 						if (_changes.TryGetValue(j + k, out change)) {
 							buf[bufIndex + k] = change.Value;
 							changed = true;
@@ -337,6 +341,11 @@ namespace HexStudio.Controls {
 				changed_sb.Clear();
 
 				for (var j = i; j < i + BytesPerLine && j < end; j++) {
+					if (SelectionStart <= j && j <= SelectionEnd) {
+						// j is selected
+						dc.DrawRectangle(SelectionBackground, null, new Rect(x + _charWidth * (j - i), pos, _charWidth, FontSize));
+					}
+
 					if (_changes.TryGetValue(j, out change)) {
 						ch = (char)change.Value;
 						changed_sb.Append(char.IsControl(ch) ? '.' : ch);
@@ -356,11 +365,6 @@ namespace HexStudio.Controls {
 
 				text = new FormattedText(changed_sb.ToString(), CultureInfo.InvariantCulture, FlowDirection.LeftToRight, typeface, FontSize, Brushes.Red);
 				dc.DrawText(text, pt);
-			}
-
-			if (SelectionStart >= 0) {
-				// draw current selection
-
 			}
 
 			_endOffset = end;
@@ -405,10 +409,20 @@ namespace HexStudio.Controls {
 			Focus();
 		}
 
+		bool _selecting;
 		private void Grid_KeyDown(object sender, KeyEventArgs e) {
 			if (CaretOffset < 0) {
 			}
 			else {
+				bool shiftDown = e.KeyboardDevice.Modifiers == ModifierKeys.Shift;
+				if (shiftDown && !_selecting) {
+					SelectionStart = SelectionEnd = CaretOffset;
+					_selecting = true;
+				}
+				e.Handled = true;
+				bool arrowKey = true;
+				var offset = CaretOffset;
+
 				switch (e.Key) {
 					case Key.Down:
 						CaretOffset += BytesPerLine;
@@ -417,10 +431,10 @@ namespace HexStudio.Controls {
 						CaretOffset -= BytesPerLine;
 						break;
 					case Key.Right:
-						CaretOffset++;
+						CaretOffset += WordSize;
 						break;
 					case Key.Left:
-						CaretOffset--;
+						CaretOffset -= WordSize;
 						break;
 					case Key.PageDown:
 						CaretOffset += BytesPerLine * _viewLines;
@@ -430,11 +444,32 @@ namespace HexStudio.Controls {
 						break;
 
 					default:
-						HandleTextEdit(e);
+						arrowKey = false;
+						if (e.KeyboardDevice.Modifiers == ModifierKeys.None)
+							HandleTextEdit(e);
+						else
+							e.Handled = false;
 						break;
 				}
+				if (shiftDown && arrowKey) {
+					bool expanding = CaretOffset > offset;    // higher addresses
+
+					if (expanding || SelectionStart <= SelectionEnd) {
+						SelectionEnd = CaretOffset - WordSize;
+					}
+					else if (!expanding || SelectionEnd <= SelectionStart) {
+						SelectionStart = CaretOffset - WordSize;
+					}
+					else {
+						_selecting = false;
+					}
+
+					InvalidateVisual();
+				}
+				else {
+					_selecting = false;
+				}
 			}
-			e.Handled = true;
 		}
 
 		int _inputIndex = 0, _wordIndex = 0;
@@ -489,6 +524,28 @@ namespace HexStudio.Controls {
 				Cursor = Cursors.IBeam;
 			else
 				Cursor = null;
+		}
+
+		public void SaveChanges() {
+			foreach (var change in _changes.Values) {
+				_accessor.Write(change.Offset, change.Value);
+			}
+			_changes.Clear();
+			IsModified = false;
+			InvalidateVisual();
+		}
+
+		public void DiscardChanges() {
+			_changes.Clear();
+			IsModified = false;
+			InvalidateVisual();
+		}
+
+		public void Dispose() {
+			if (_accessor != null)
+				_accessor.Dispose();
+			if (_memFile != null)
+				_memFile.Dispose();
 		}
 	}
 }

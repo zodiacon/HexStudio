@@ -148,7 +148,46 @@
     <Resource Include="Icons\close.ico" />
   </ItemGroup>
   <ItemGroup>
+    <Resource Include="Icons\copy.ico" />
+  </ItemGroup>
+  <ItemGroup>
     <Resource Include="Icons\file.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Icons\file_new.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Icons\open.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Icons\paste.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Icons\selection_delete.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Icons\save_as.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Icons\save.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Icons\recycle.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Icons\find.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Icons\cut.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Icons\app.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Icons\undo.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Icons\redo.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

@@ -1,14 +1,45 @@
-﻿using Prism.Mvvm;
+﻿using Prism.Commands;
+using Prism.Mvvm;
 using System.IO;
+using HexStudio.Controls;
+using System;
+using System.Windows;
 
 namespace HexStudio.ViewModels {
-	class OpenFileViewModel : BindableBase {
+	class OpenFileViewModel : BindableBase, IDisposable {
 		public string FileName { get; }
-		public OpenFileViewModel(string filename) {
+		public DelegateCommandBase SaveFileCommand { get; }
+		public DelegateCommandBase RevertFileCommand { get; }
+		public DelegateCommandBase CloseCommand { get; }
+
+		MainViewModel _mainViewModel;
+
+		public OpenFileViewModel(MainViewModel mainViewModel, string filename) {
+			_mainViewModel = mainViewModel;
 			FileName = filename;
+
+			SaveFileCommand = new DelegateCommand(() => {
+				_editor.SaveChanges();
+			}, () => IsModified).ObservesProperty(() => IsModified);
+
+			RevertFileCommand = new DelegateCommand(() => {
+				_editor.DiscardChanges();
+			}, () => IsModified).ObservesProperty(() => IsModified);
+
+			CloseCommand = new DelegateCommand(() => {
+				if (IsModified) {
+					var reply = _mainViewModel.MessageBoxService.ShowMessage("File modified. Save before close?",
+						Constants.AppTitle, MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+					if (reply == MessageBoxResult.Cancel)
+						return;
+					if (reply == MessageBoxResult.Yes)
+						_editor.SaveChanges();
+				}
+				_mainViewModel.CloseFile(this);
+			});
 		}
 
-		public string Title => Path.GetFileName(FileName);
+		public string Title => Path.GetFileName(FileName) + (IsModified ? " *" : string.Empty);
 
 		private bool _isReadOnly;
 
@@ -22,6 +53,26 @@ namespace HexStudio.ViewModels {
 		public int WordSize {
 			get { return _wordSize; }
 			set { SetProperty(ref _wordSize, value); }
+		}
+
+		private bool _isModified;
+
+		public bool IsModified {
+			get { return _isModified; }
+			set {
+				if (SetProperty(ref _isModified, value)) {
+					OnPropertyChanged(nameof(Title));
+				}
+			}
+		}
+
+		HexEdit _editor;
+		internal void SetHexEdit(HexEdit hexEdit) {
+			_editor = hexEdit;
+		}
+
+		public void Dispose() {
+			_editor.Dispose();
 		}
 
 		private bool _is1Byte = true;

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using HexStudio.ViewModels;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -20,6 +21,12 @@ namespace HexStudio.Views {
 	public partial class OpenFileView : UserControl {
 		public OpenFileView() {
 			InitializeComponent();
+
+			DataContextChanged += OpenFileView_DataContextChanged;
+		}
+
+		private void OpenFileView_DataContextChanged(object sender, DependencyPropertyChangedEventArgs e) {
+			((OpenFileViewModel)DataContext).SetHexEdit(_hexEdit);
 		}
 	}
 }
