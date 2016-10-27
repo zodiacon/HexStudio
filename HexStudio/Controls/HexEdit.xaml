@@ -1,0 +1,23 @@
+﻿<UserControl x:Class="HexStudio.Controls.HexEdit"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:HexStudio.Controls"
+             mc:Ignorable="d" x:Name="This" Focusable="True"
+             d:DesignHeight="300" d:DesignWidth="300" SizeChanged="This_SizeChanged" FontFamily="Consolas" 
+             KeyDown="Grid_KeyDown">
+    <Grid Background="Transparent" MouseWheel="Grid_MouseWheel" MouseMove="Grid_MouseMove" MouseLeftButtonDown="_scroll_MouseLeftButtonDown"
+          >
+        <ScrollBar x:Name="_scroll" HorizontalAlignment="Right" ValueChanged="_scroll_ValueChanged" SmallChange="{Binding SmallChange, ElementName=This, FallbackValue=25}"
+                   LargeChange="{Binding LargeChange, ElementName=This, FallbackValue=150}"
+                   />
+        <Rectangle HorizontalAlignment="Left" VerticalAlignment="Top" Width="{DynamicResource {x:Static SystemParameters.CaretWidthKey}}" Height="{Binding FontSize, ElementName=This}"
+                   Fill="{Binding CaretFill, ElementName=This, FallbackValue=Black}" IsHitTestVisible="False"
+                   x:Name="_caret">
+            <Rectangle.RenderTransform>
+                <TranslateTransform x:Name="_caretPosition" />
+            </Rectangle.RenderTransform>
+        </Rectangle>
+    </Grid>
+</UserControl>
