@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.IO.MemoryMappedFiles;
@@ -57,7 +58,8 @@ namespace HexStudio.Controls {
 		}
 
 		public static readonly DependencyProperty FilenameProperty =
-			 DependencyProperty.Register(nameof(Filename), typeof(string), typeof(HexEdit), new PropertyMetadata(null, (s, e) => ((HexEdit)s).OnFilenameChanged(e)));
+			 DependencyProperty.Register(nameof(Filename), typeof(string), typeof(HexEdit),
+				 new PropertyMetadata(null, (s, e) => ((HexEdit)s).OnFilenameChanged(e)));
 
 
 		public long CaretOffset {
@@ -66,7 +68,8 @@ namespace HexStudio.Controls {
 		}
 
 		public static readonly DependencyProperty CaretOffsetProperty =
-			 DependencyProperty.Register(nameof(CaretOffset), typeof(long), typeof(HexEdit), new PropertyMetadata(-1L, (s, e) => ((HexEdit)s).OnCaretOffsetChanged(e), (s, e) => ((HexEdit)s).CoerceCaretOffset(e)));
+			 DependencyProperty.Register(nameof(CaretOffset), typeof(long), typeof(HexEdit),
+				 new PropertyMetadata(0L, (s, e) => ((HexEdit)s).OnCaretOffsetChanged(e), (s, e) => ((HexEdit)s).CoerceCaretOffset(e)));
 
 		private object CoerceCaretOffset(object value) {
 			var offset = (long)value;
@@ -251,7 +254,7 @@ namespace HexStudio.Controls {
 
 			var x = maxWidth + 8;
 
-			var buf = new byte[end - start + 1 + 7];		// spare bytes
+			var buf = new byte[end - start + 1 + 7];     // spare bytes
 
 			var read = _accessor.ReadArray(start, buf, 0, buf.Length);
 			if (start + read < end)
@@ -403,18 +406,13 @@ namespace HexStudio.Controls {
 			_scroll.Value -= e.Delta;
 		}
 
-		private void _scroll_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) {
-			var pt = e.GetPosition(this);
-			CaretOffset = GetOffsetByCursorPosition(pt);
-			Focus();
-		}
-
 		bool _selecting;
 		private void Grid_KeyDown(object sender, KeyEventArgs e) {
 			if (CaretOffset < 0) {
 			}
 			else {
-				bool shiftDown = e.KeyboardDevice.Modifiers == ModifierKeys.Shift;
+				var modifiers = e.KeyboardDevice.Modifiers;
+				bool shiftDown = modifiers == ModifierKeys.Shift;
 				if (shiftDown && !_selecting) {
 					SelectionStart = SelectionEnd = CaretOffset;
 					_selecting = true;
@@ -437,15 +435,23 @@ namespace HexStudio.Controls {
 						CaretOffset -= WordSize;
 						break;
 					case Key.PageDown:
-						CaretOffset += BytesPerLine * _viewLines;
+
+						if ((modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+							CaretOffset = _size - _size % WordSize - 1;
+						else
+							CaretOffset += BytesPerLine * _viewLines;
 						break;
+
 					case Key.PageUp:
-						CaretOffset -= BytesPerLine * _viewLines;
+						if ((modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+							CaretOffset = 0;
+						else
+							CaretOffset -= BytesPerLine * _viewLines;
 						break;
 
 					default:
 						arrowKey = false;
-						if (e.KeyboardDevice.Modifiers == ModifierKeys.None)
+						if (modifiers == ModifierKeys.None)
 							HandleTextEdit(e);
 						else
 							e.Handled = false;
@@ -453,22 +459,12 @@ namespace HexStudio.Controls {
 				}
 				if (shiftDown && arrowKey) {
 					bool expanding = CaretOffset > offset;    // higher addresses
-
-					if (expanding || SelectionStart <= SelectionEnd) {
-						SelectionEnd = CaretOffset - WordSize;
-					}
-					else if (!expanding || SelectionEnd <= SelectionStart) {
-						SelectionStart = CaretOffset - WordSize;
-					}
-					else {
-						_selecting = false;
-					}
-
-					InvalidateVisual();
+					UpdateSelection(expanding);
 				}
 				else {
 					_selecting = false;
 				}
+				Focus();
 			}
 		}
 
@@ -517,13 +513,58 @@ namespace HexStudio.Controls {
 			InvalidateVisual();
 		}
 
+		bool _mouseLeftButtonDown;
+		private void _scroll_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) {
+			var pt = e.GetPosition(this);
+			CaretOffset = GetOffsetByCursorPosition(pt);
+			Focus();
+			_root.CaptureMouse();
+			_mouseLeftButtonDown = true;
+		}
+
 		private void Grid_MouseMove(object sender, MouseEventArgs e) {
 			// change cursor 
 			var pt = e.GetPosition(this);
-			if (pt.X >= _hexDataXPos && pt.X < _hexDataXPos + _hexDataWidth)
+			if (pt.X >= _hexDataXPos && pt.X < _hexDataXPos + _hexDataWidth) {
 				Cursor = Cursors.IBeam;
+				if (_mouseLeftButtonDown) {
+					var offset = CaretOffset;
+					CaretOffset = GetOffsetByCursorPosition(pt);
+					if (offset != CaretOffset && !_selecting) {
+						_selecting = true;
+						SelectionStart = SelectionEnd = CaretOffset;
+					}
+					else if(_selecting) {
+						UpdateSelection(CaretOffset >= offset);
+						Debug.WriteLine($"Updating selection {CaretOffset}");
+					}
+				}
+			}
 			else
 				Cursor = null;
+		}
+
+		private void Grid_MouseLeftButtonUp(object sender, MouseButtonEventArgs e) {
+			_selecting = _mouseLeftButtonDown = false;
+			_root.ReleaseMouseCapture();
+			InvalidateVisual();
+		}
+
+		private void UpdateSelection(bool expanding) {
+			if (expanding) {
+				if (CaretOffset >= SelectionStart && CaretOffset > SelectionEnd)
+					SelectionEnd = CaretOffset - WordSize;
+				else
+					SelectionStart = CaretOffset;
+			}
+			else {
+				if (CaretOffset > SelectionStart && CaretOffset <= SelectionEnd)
+					SelectionEnd = CaretOffset - WordSize;
+				else
+					SelectionStart = CaretOffset;
+			}
+
+			InvalidateVisual();
 		}
 
 		public void SaveChanges() {

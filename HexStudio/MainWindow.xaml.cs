@@ -1,4 +1,5 @@
-﻿using System;
+﻿using HexStudio.ViewModels;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -20,6 +21,11 @@ namespace HexStudio {
 	public partial class MainWindow {
 		public MainWindow() {
 			InitializeComponent();
+		}
+
+		private void MetroWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e) {
+			if (!((MainViewModel)DataContext).QueryCloseAll())
+				e.Cancel = true;
 		}
 	}
 }

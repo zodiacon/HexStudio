@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Input;
 using Zodiacon.WPF;
 
@@ -25,7 +26,25 @@ namespace HexStudio.ViewModels {
 		public IFileDialogService FileDialogService => UIServices.FileDialogService;
 		public IMessageBoxService MessageBoxService => UIServices.MessageBoxService;
 
+		public bool QueryCloseAll() {
+			if (!OpenFiles.Any(file => file.IsModified))
+				return true;
+
+			var result = MessageBoxService.ShowMessage("Save modified files before exit?", 
+				Constants.AppTitle, MessageBoxButton.YesNoCancel, MessageBoxImage.Warning);
+			if (result == MessageBoxResult.Yes) {
+				foreach (var file in OpenFiles)
+					if (file.IsModified)
+						file.Save();
+				return true;
+			}
+		
+			return result == MessageBoxResult.No;
+		}
+
 		public static ICommand EmptyCommand = new DelegateCommand(() => { }, () => false);
+
+		public ICommand ExitCommand => new DelegateCommand(() => Application.Current.Shutdown());
 
 		public IList<OpenFileViewModel> OpenFiles => _openFiles;
 

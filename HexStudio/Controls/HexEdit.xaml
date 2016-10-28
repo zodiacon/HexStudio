@@ -7,7 +7,7 @@
              mc:Ignorable="d" x:Name="This" Focusable="True"
              d:DesignHeight="300" d:DesignWidth="300" SizeChanged="This_SizeChanged" FontFamily="Consolas" 
              KeyDown="Grid_KeyDown" >
-    <Grid Background="Transparent" MouseWheel="Grid_MouseWheel" MouseMove="Grid_MouseMove" MouseLeftButtonDown="_scroll_MouseLeftButtonDown"
+    <Grid Background="Transparent" MouseWheel="Grid_MouseWheel" MouseMove="Grid_MouseMove" MouseLeftButtonDown="_scroll_MouseLeftButtonDown" MouseLeftButtonUp="Grid_MouseLeftButtonUp" x:Name="_root"
           >
         <ScrollBar x:Name="_scroll" HorizontalAlignment="Right" ValueChanged="_scroll_ValueChanged" SmallChange="{Binding SmallChange, ElementName=This, FallbackValue=25}"
                    LargeChange="{Binding LargeChange, ElementName=This, FallbackValue=150}"

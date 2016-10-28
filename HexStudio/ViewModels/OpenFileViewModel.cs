@@ -18,9 +18,7 @@ namespace HexStudio.ViewModels {
 			_mainViewModel = mainViewModel;
 			FileName = filename;
 
-			SaveFileCommand = new DelegateCommand(() => {
-				_editor.SaveChanges();
-			}, () => IsModified).ObservesProperty(() => IsModified);
+			SaveFileCommand = new DelegateCommand(Save, () => IsModified).ObservesProperty(() => IsModified);
 
 			RevertFileCommand = new DelegateCommand(() => {
 				_editor.DiscardChanges();
@@ -37,6 +35,10 @@ namespace HexStudio.ViewModels {
 				}
 				_mainViewModel.CloseFile(this);
 			});
+		}
+
+		public void Save() {
+			_editor.SaveChanges();
 		}
 
 		public string Title => Path.GetFileName(FileName) + (IsModified ? " *" : string.Empty);

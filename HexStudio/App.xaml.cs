@@ -26,5 +26,6 @@ namespace HexStudio {
 			vm.MessageBoxService.SetOwner(win);
 			win.Show();
 		}
+
 	}
 }
