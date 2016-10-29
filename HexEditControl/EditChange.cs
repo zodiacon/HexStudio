@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace HexStudio.Controls {
+namespace Zodiacon.HexEditControl {
 	class EditChange : IEqualityComparer<EditChange>, IComparable<EditChange> {
 		public long Offset { get; set; }
 		public byte Value { get; set; }

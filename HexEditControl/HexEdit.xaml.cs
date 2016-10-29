@@ -19,7 +19,7 @@ using System.Windows.Shapes;
 using System.Windows.Threading;
 using Zodiacon.WPF;
 
-namespace HexStudio.Controls {
+namespace Zodiacon.HexEditControl {
 	/// <summary>
 	/// Interaction logic for HexEdit.xaml
 	/// </summary>
@@ -268,7 +268,7 @@ namespace HexStudio.Controls {
 			Dispose();
 
 			var filename = (string)e.NewValue;
-			_size = 0;
+			_size = _sizeLimit = 0;
 			if (filename != null) {
 				_size = new FileInfo(filename).Length;
 				_memFile = MemoryMappedFile.CreateFromFile(filename, FileMode.Open);

@@ -1,9 +1,9 @@
 ﻿using Prism.Commands;
 using Prism.Mvvm;
 using System.IO;
-using HexStudio.Controls;
 using System;
 using System.Windows;
+using Zodiacon.HexEditControl;
 
 namespace HexStudio.ViewModels {
 	class OpenFileViewModel : BindableBase, IDisposable {
