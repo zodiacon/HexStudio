@@ -17,6 +17,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Windows.Threading;
+using Zodiacon.WPF;
 
 namespace HexStudio.Controls {
 	/// <summary>
@@ -25,15 +26,18 @@ namespace HexStudio.Controls {
 	public partial class HexEdit : IDisposable {
 		MemoryMappedFile _memFile;
 		MemoryMappedViewAccessor _accessor;
-		long _size;
-		DispatcherTimer _timer;
+		long _size, _sizeLimit;
+		readonly DispatcherTimer _timer;
 		double _hexDataXPos, _hexDataWidth;
 		long _startOffset, _endOffset;
-		Dictionary<long, Point> _offsetsPositions = new Dictionary<long, Point>(128);
-		Dictionary<int, long> _verticalPositions = new Dictionary<int, long>(128);
-		Dictionary<long, EditChange> _changes = new Dictionary<long, EditChange>(128);
 		double _charWidth;
 		int _viewLines;
+
+		readonly Dictionary<long, Point> _offsetsPositions = new Dictionary<long, Point>(128);
+		readonly Dictionary<int, long> _verticalPositions = new Dictionary<int, long>(128);
+		readonly Dictionary<long, EditChange> _changes = new Dictionary<long, EditChange>(128);
+		readonly AppCommandManager _commandManager = new AppCommandManager();
+
 		//long _totalLines;
 
 		public HexEdit() {
@@ -42,6 +46,57 @@ namespace HexStudio.Controls {
 			_timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(.5) };
 			_timer.Tick += _timer_Tick;
 			_timer.Start();
+
+			// create new document by default
+			CreateNew();
+
+			Loaded += delegate {
+				_root.Focus();
+			};
+		}
+
+		static HexEdit() {
+			CommandManager.RegisterClassCommandBinding(typeof(HexEdit), new CommandBinding(ApplicationCommands.SelectAll, 
+				(s, e) => ((HexEdit)s).ExecuteSelectAll(e)));
+			CommandManager.RegisterClassCommandBinding(typeof(HexEdit), new CommandBinding(ApplicationCommands.Copy, 
+				(s, e) => ((HexEdit)s).ExecuteCopy(e), (s, e) => ((HexEdit)s).CanExecuteCopy(e)));
+			CommandManager.RegisterClassCommandBinding(typeof(HexEdit), new CommandBinding(ApplicationCommands.Paste, 
+				(s, e) => ((HexEdit)s).ExecutePaste(e), (s, e) => ((HexEdit)s).CanExecutePaste(e)));
+		}
+
+		private void ExecutePaste(ExecutedRoutedEventArgs e) {
+			throw new NotImplementedException();
+		}
+
+		private void CanExecutePaste(CanExecuteRoutedEventArgs e) {
+			e.CanExecute = Clipboard.ContainsData(DataFormats.Serializable);
+		}
+
+		private void CanExecuteCopy(CanExecuteRoutedEventArgs e) {
+			e.CanExecute = SelectionStart >= 0 && SelectionEnd - SelectionStart > 0;
+		}
+
+		private void ExecuteCopy(ExecutedRoutedEventArgs e) {
+			try {
+				var count = SelectionEnd - SelectionStart + 1;
+				if (count > 1L << 31 - 1) {
+					// too large, raise event
+				}
+				else {
+					var bytes = new byte[count];
+					_accessor.ReadArray(SelectionStart, bytes, 0, bytes.Length);
+					Clipboard.SetData(DataFormats.Serializable, bytes);
+				}
+			}
+			catch (OutOfMemoryException) {
+								
+			}
+		}
+
+		private void ExecuteSelectAll(ExecutedRoutedEventArgs e) {
+			SelectionStart = 0;
+			SelectionEnd = _size;
+			InvalidateVisual();
 		}
 
 		private void _timer_Tick(object sender, EventArgs e) {
@@ -75,7 +130,9 @@ namespace HexStudio.Controls {
 			var offset = (long)value;
 			if (offset < 0)
 				offset = 0;
-			else if (offset >= _size)
+			else if (_sizeLimit > 0 && offset >= _sizeLimit)
+				offset = _sizeLimit - 1;
+			else if (offset >= _size && !IsReadOnly)
 				offset = _size - 1;
 			return offset;
 		}
@@ -168,8 +225,6 @@ namespace HexStudio.Controls {
 		public static readonly DependencyProperty IsReadOnlyProperty =
 			 DependencyProperty.Register("IsReadOnly", typeof(bool), typeof(HexEdit), new PropertyMetadata(false));
 
-
-
 		public bool IsModified {
 			get { return (bool)GetValue(IsModifiedProperty); }
 			set { SetValue(IsModifiedProperty, value); }
@@ -200,6 +255,13 @@ namespace HexStudio.Controls {
 				CaretOffset = CaretOffset - CaretOffset % WordSize;
 				SetCaretPosition(CaretOffset);
 			}
+		}
+
+		public void CreateNew(long sizeLimit = 1 << 20) {
+			Dispose();
+			_memFile = MemoryMappedFile.CreateNew(null, _sizeLimit = sizeLimit);
+			_size = WordSize;
+			_accessor = _memFile.CreateViewAccessor();
 		}
 
 		private void OnFilenameChanged(DependencyPropertyChangedEventArgs e) {
@@ -390,10 +452,13 @@ namespace HexStudio.Controls {
 
 		long GetOffsetByCursorPosition(Point pt) {
 			var xp = pt.X - _hexDataXPos;
-			long offset;
+			long offset = -1;
 			var y = (int)pt.Y;
-			while (!_verticalPositions.TryGetValue(y, out offset))
+			while (!_verticalPositions.TryGetValue(y, out offset) && y > -10)
 				y--;
+			if (offset < 0)
+				return offset;
+
 			int x = (int)(xp / (_charWidth * (WordSize * 2 + 1))) * WordSize;
 			return offset + x;
 		}
@@ -406,6 +471,7 @@ namespace HexStudio.Controls {
 			_scroll.Value -= e.Delta;
 		}
 
+		static byte[] _zeros = new byte[8];
 		bool _selecting;
 		private void Grid_KeyDown(object sender, KeyEventArgs e) {
 			if (CaretOffset < 0) {
@@ -429,6 +495,10 @@ namespace HexStudio.Controls {
 						CaretOffset -= BytesPerLine;
 						break;
 					case Key.Right:
+						if (!_selecting && CaretOffset + WordSize >= _size) {
+							_size = CaretOffset + WordSize * 2;
+							_accessor.WriteArray(_size - WordSize, _zeros, 0, WordSize);
+						}
 						CaretOffset += WordSize;
 						break;
 					case Key.Left:
@@ -464,7 +534,7 @@ namespace HexStudio.Controls {
 				else {
 					_selecting = false;
 				}
-				Focus();
+				_root.Focus();
 			}
 		}
 
@@ -494,6 +564,8 @@ namespace HexStudio.Controls {
 				_currentChange = null;
 				_inputIndex = 0;
 				if (++_wordIndex == WordSize) {
+					if (CaretOffset + WordSize >= _size)
+						_size = CaretOffset + 2 * WordSize;
 					CaretOffset += WordSize;
 					_wordIndex = 0;
 				}
@@ -517,7 +589,7 @@ namespace HexStudio.Controls {
 		private void _scroll_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) {
 			var pt = e.GetPosition(this);
 			CaretOffset = GetOffsetByCursorPosition(pt);
-			Focus();
+			_root.Focus();
 			_root.CaptureMouse();
 			_mouseLeftButtonDown = true;
 		}
@@ -574,6 +646,21 @@ namespace HexStudio.Controls {
 			_changes.Clear();
 			IsModified = false;
 			InvalidateVisual();
+		}
+
+		public void SaveChangesAs(string newfilename) {
+			if (Filename == null) {
+				var offset = _changes.Max(change => change.Key);
+				SaveChanges();
+
+				// new file
+				var bytes = new byte[offset];
+				_accessor.ReadArray(0, bytes, 0, bytes.Length);
+				File.WriteAllBytes(newfilename, bytes);
+				Filename = newfilename;
+			}
+			else {
+			}
 		}
 
 		public void DiscardChanges() {

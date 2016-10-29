@@ -35,7 +35,7 @@ namespace HexStudio.ViewModels {
 			if (result == MessageBoxResult.Yes) {
 				foreach (var file in OpenFiles)
 					if (file.IsModified)
-						file.Save();
+						file.SaveInternal();
 				return true;
 			}
 		
@@ -45,6 +45,12 @@ namespace HexStudio.ViewModels {
 		public static ICommand EmptyCommand = new DelegateCommand(() => { }, () => false);
 
 		public ICommand ExitCommand => new DelegateCommand(() => Application.Current.Shutdown());
+
+		public ICommand NewFileCommand => new DelegateCommand(() => {
+			var file = new OpenFileViewModel(this, null);
+			OpenFiles.Add(file);
+			SelectedFile = file;
+		});
 
 		public IList<OpenFileViewModel> OpenFiles => _openFiles;
 

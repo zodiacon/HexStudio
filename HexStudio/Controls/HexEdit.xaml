@@ -4,11 +4,11 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:HexStudio.Controls"
-             mc:Ignorable="d" x:Name="This" Focusable="True"
+             mc:Ignorable="d" x:Name="This" 
              d:DesignHeight="300" d:DesignWidth="300" SizeChanged="This_SizeChanged" FontFamily="Consolas" 
-             KeyDown="Grid_KeyDown" >
+             KeyDown="Grid_KeyDown" Focusable="False" >
     <Grid Background="Transparent" MouseWheel="Grid_MouseWheel" MouseMove="Grid_MouseMove" MouseLeftButtonDown="_scroll_MouseLeftButtonDown" MouseLeftButtonUp="Grid_MouseLeftButtonUp" x:Name="_root"
-          >
+          Focusable="True">
         <ScrollBar x:Name="_scroll" HorizontalAlignment="Right" ValueChanged="_scroll_ValueChanged" SmallChange="{Binding SmallChange, ElementName=This, FallbackValue=25}"
                    LargeChange="{Binding LargeChange, ElementName=This, FallbackValue=150}"
                    />

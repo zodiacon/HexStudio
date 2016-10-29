@@ -7,8 +7,8 @@ using System.Windows;
 
 namespace HexStudio.ViewModels {
 	class OpenFileViewModel : BindableBase, IDisposable {
-		public string FileName { get; }
 		public DelegateCommandBase SaveFileCommand { get; }
+		public DelegateCommandBase SaveAsFileCommand { get; }
 		public DelegateCommandBase RevertFileCommand { get; }
 		public DelegateCommandBase CloseCommand { get; }
 
@@ -16,9 +16,15 @@ namespace HexStudio.ViewModels {
 
 		public OpenFileViewModel(MainViewModel mainViewModel, string filename) {
 			_mainViewModel = mainViewModel;
-			FileName = filename;
+			if (filename == null) {
+				// new file
+			}
+			else {
+				FileName = filename;
+			}
 
-			SaveFileCommand = new DelegateCommand(Save, () => IsModified).ObservesProperty(() => IsModified);
+			SaveFileCommand = new DelegateCommand(SaveInternal, () => IsModified).ObservesProperty(() => IsModified);
+			SaveAsFileCommand = new DelegateCommand(SaveAsInternal);
 
 			RevertFileCommand = new DelegateCommand(() => {
 				_editor.DiscardChanges();
@@ -37,11 +43,34 @@ namespace HexStudio.ViewModels {
 			});
 		}
 
-		public void Save() {
-			_editor.SaveChanges();
+		private string _filename;
+
+		public string FileName {
+			get { return _filename; }
+			set {
+				if (SetProperty(ref _filename, value)) {
+					OnPropertyChanged(nameof(Title));
+				}
+			}
 		}
 
-		public string Title => Path.GetFileName(FileName) + (IsModified ? " *" : string.Empty);
+		public void SaveInternal() {
+			if (FileName == null)
+				SaveAsInternal();
+			else
+				_editor.SaveChanges();
+		}
+
+		private void SaveAsInternal() {
+			var filename = _mainViewModel.FileDialogService.GetFileForSave();
+			if (filename == null) return;
+
+			_editor.SaveChangesAs(filename);
+			FileName = filename;
+			OnPropertyChanged(nameof(Title));
+		}
+
+		public string Title => (FileName == null ? "Untitled" : Path.GetFileName(FileName)) + (IsModified ? " *" : string.Empty);
 
 		private bool _isReadOnly;
 
