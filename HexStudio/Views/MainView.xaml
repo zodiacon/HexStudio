@@ -32,6 +32,15 @@
                 <MenuItem Header="_Close" InputGestureText="Ctrl+F4" Command="{Binding SelectedFile.CloseCommand, FallbackValue={x:Static vm:MainViewModel.EmptyCommand}}" />
                 <MenuItem Header="Close All" Command="{Binding CloseAllCommand}" />
                 <Separator />
+                <MenuItem Header="Recent Files" ItemsSource="{Binding RecentFiles}">
+                    <MenuItem.ItemContainerStyle>
+                        <Style TargetType="MenuItem" BasedOn="{StaticResource MetroMenuItem}">
+                            <Setter Property="Command" Value="{Binding DataContext.OpenRecentFileCommand,ElementName=This}" />
+                            <Setter Property="CommandParameter" Value="{Binding}" />
+                        </Style>
+                    </MenuItem.ItemContainerStyle>
+                </MenuItem>
+                <Separator />
                 <MenuItem Header="E_xit" Command="{Binding ExitCommand}" />
             </MenuItem>
             <MenuItem Header="_Edit">
@@ -43,6 +52,8 @@
                 <MenuItem Header="_Paste" Icon="{z:Image /icons/paste.ico, Width=20, Height=20}" Command="Paste" />
                 <Separator />
                 <MenuItem Header="Select _All" Command="SelectAll" />
+                <Separator />
+                <MenuItem Header="Overwrite Mode" IsCheckable="True" IsChecked="{Binding SelectedFile.OverwriteMode, FallbackValue={x:Static vm:MainViewModel.EmptyCommand}}" />
                 <Separator />
                 <MenuItem Header="_Find..." InputGestureText="Ctrl+F" Icon="{z:Image /icons/find.ico, Width=20, Height=20}" 
                           Command="{Binding SelectedFile.FindCommand, FallbackValue={x:Static vm:MainViewModel.EmptyCommand}}" />

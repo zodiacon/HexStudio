@@ -11,17 +11,21 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Threading;
 using Zodiacon.WPF;
 
 namespace HexStudio.ViewModels {
 	[Export]
 	class MainViewModel : BindableBase {
 		ObservableCollection<OpenFileViewModel> _openFiles = new ObservableCollection<OpenFileViewModel>();
+		ObservableCollection<string> _recentFiles = new ObservableCollection<string>();
 
 #pragma warning disable 649
 		[Import]
 		public UIServicesDefaults UIServices;
 #pragma warning restore 649
+
+		public IList<string> RecentFiles => _recentFiles;
 
 		public IFileDialogService FileDialogService => UIServices.FileDialogService;
 		public IMessageBoxService MessageBoxService => UIServices.MessageBoxService;
@@ -47,7 +51,7 @@ namespace HexStudio.ViewModels {
 		public ICommand ExitCommand => new DelegateCommand(() => Application.Current.Shutdown());
 
 		public ICommand NewFileCommand => new DelegateCommand(() => {
-			var file = new OpenFileViewModel(this, null);
+			var file = new OpenFileViewModel(this);
 			OpenFiles.Add(file);
 			SelectedFile = file;
 		});
@@ -85,7 +89,18 @@ namespace HexStudio.ViewModels {
 		}
 
 		private void OpenFileInternal(string filename) {
-			var file = new OpenFileViewModel(this, filename);
+			var file = new OpenFileViewModel(this);
+			file.Ready += delegate {
+				Dispatcher.CurrentDispatcher.InvokeAsync(() => {
+					try {
+						file.OpenFile(filename);
+					}
+					catch (Exception ex) {
+						OpenFiles.Remove(file);
+						MessageBoxService.ShowMessage($"Error: {ex.Message}", Constants.AppTitle);
+					}
+				});
+			};
 			OpenFiles.Add(file);
 			SelectedFile = file;
 		}

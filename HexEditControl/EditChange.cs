@@ -5,10 +5,20 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Zodiacon.HexEditControl {
-	class EditChange : IEqualityComparer<EditChange>, IComparable<EditChange> {
-		public long Offset { get; set; }
-		public byte Value { get; set; }
+	public sealed class EditChange : IEqualityComparer<EditChange>, IComparable<EditChange> {
+		public EditChange(long offset, params byte[] data) {
+			Offset = offset;
+			if (data != null)
+				Data = new List<byte>(data);
+			else
+				Data = new List<byte>(32);
+		}
+
+		public long Offset { get; private set; }
+		public List<byte> Data { get; }
+
 		public bool Overwrite { get; set; }
+		public int Size => Data.Count;
 
 		public int CompareTo(EditChange other) {
 			return Offset.CompareTo(other.Offset);
@@ -20,6 +30,14 @@ namespace Zodiacon.HexEditControl {
 
 		public int GetHashCode(EditChange obj) {
 			return obj.Offset.GetHashCode();
+		}
+
+		public void UpdateOffset(int delta) {
+			Offset += delta;
+		}
+
+		public bool Intersect(long offset, int size) {
+			return offset >= Offset && offset + size <= Offset + Size;
 		}
 	}
 

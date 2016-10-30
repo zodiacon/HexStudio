@@ -45,13 +45,24 @@
     </When>
     <Otherwise>
       <ItemGroup>
-        <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework" />
+        <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework">
+          <Private>False</Private>
+        </Reference>
       </ItemGroup>
     </Otherwise>
   </Choose>
   <ItemGroup>
-    <Compile Include="EditTests.cs" />
+    <Compile Include="ByteBufferOverlapTests.cs" />
+    <Compile Include="Extensions.cs" />
+    <Compile Include="Helpers.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ByteBufferInsertTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\HexEditControl\Zodiacon.HexEditControl.csproj">
+      <Project>{2b53ab2b-dad7-4794-9f36-50e6004b5806}</Project>
+      <Name>Zodiacon.HexEditControl</Name>
+    </ProjectReference>
   </ItemGroup>
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">

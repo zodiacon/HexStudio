@@ -36,9 +36,9 @@
             
         </StackPanel>
         
-        <c:HexEdit x:Name="_hexEdit" Margin="2" Grid.Row="1" IsReadOnly="{Binding IsReadOnly}" Filename="{Binding FileName, Mode=TwoWay}" FontSize="{Binding Settings.FontSize}"
+        <c:HexEdit x:Name="_hexEdit" Margin="2" Grid.Row="1" IsReadOnly="{Binding IsReadOnly}" FontSize="{Binding Settings.FontSize}"
                    Foreground="{Binding Settings.TextForeground, Converter={StaticResource colorToBrushConverter}}"
-                   WordSize="{Binding WordSize}" IsModified="{Binding IsModified, Mode=OneWayToSource}"
+                   WordSize="{Binding WordSize}" IsModified="{Binding IsModified, Mode=OneWayToSource}" OverwriteMode="{Binding OverwriteMode, Mode=TwoWay}"
                    />
     </Grid>
 </UserControl>
