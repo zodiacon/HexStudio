@@ -78,6 +78,7 @@
     <Compile Include="Constants.cs" />
     <Compile Include="Converters\RgbColorToBrushConverter.cs" />
     <Compile Include="Models\RgbColor.cs" />
+    <Compile Include="Settings.cs" />
     <Compile Include="TabControlProperties.cs" />
     <Compile Include="ViewModels\MainViewModel.cs" />
     <Compile Include="ViewModels\OpenFileViewModel.cs" />

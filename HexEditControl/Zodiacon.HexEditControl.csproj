@@ -60,6 +60,7 @@
     <Compile Include="Commands\InsertBufferCommand.cs" />
     <Compile Include="Commands\InsertWordCommand.cs" />
     <Compile Include="EditChange.cs" />
+    <Compile Include="HexEdit.Prperties.cs" />
     <Compile Include="HexEdit.xaml.cs">
       <DependentUpon>HexEdit.xaml</DependentUpon>
     </Compile>

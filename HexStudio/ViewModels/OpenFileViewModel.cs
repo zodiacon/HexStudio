@@ -14,14 +14,10 @@ namespace HexStudio.ViewModels {
 
 		MainViewModel _mainViewModel;
 
-		public OpenFileViewModel(MainViewModel mainViewModel, string filename) {
+		public event EventHandler Ready;
+
+		public OpenFileViewModel(MainViewModel mainViewModel) {
 			_mainViewModel = mainViewModel;
-			if (filename == null) {
-				// new file
-			}
-			else {
-				FileName = filename;
-			}
 
 			SaveFileCommand = new DelegateCommand(SaveInternal, () => IsModified).ObservesProperty(() => IsModified);
 			SaveAsFileCommand = new DelegateCommand(SaveAsInternal);
@@ -41,6 +37,11 @@ namespace HexStudio.ViewModels {
 				}
 				_mainViewModel.CloseFile(this);
 			});
+		}
+
+		public void OpenFile(string filename) {
+			_editor.OpenFile(filename);
+			FileName = filename;
 		}
 
 		private string _filename;
@@ -100,6 +101,7 @@ namespace HexStudio.ViewModels {
 		HexEdit _editor;
 		internal void SetHexEdit(HexEdit hexEdit) {
 			_editor = hexEdit;
+			Ready?.Invoke(this, EventArgs.Empty);
 		}
 
 		public void Dispose() {

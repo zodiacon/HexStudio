@@ -32,6 +32,15 @@
                 <MenuItem Header="_Close" InputGestureText="Ctrl+F4" Command="{Binding SelectedFile.CloseCommand, FallbackValue={x:Static vm:MainViewModel.EmptyCommand}}" />
                 <MenuItem Header="Close All" Command="{Binding CloseAllCommand}" />
                 <Separator />
+                <MenuItem Header="Recent Files" ItemsSource="{Binding RecentFiles}">
+                    <MenuItem.ItemContainerStyle>
+                        <Style TargetType="MenuItem" BasedOn="{StaticResource MetroMenuItem}">
+                            <Setter Property="Command" Value="{Binding DataContext.OpenRecentFileCommand,ElementName=This}" />
+                            <Setter Property="CommandParameter" Value="{Binding}" />
+                        </Style>
+                    </MenuItem.ItemContainerStyle>
+                </MenuItem>
+                <Separator />
                 <MenuItem Header="E_xit" Command="{Binding ExitCommand}" />
             </MenuItem>
             <MenuItem Header="_Edit">
