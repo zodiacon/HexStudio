@@ -17,6 +17,10 @@ namespace Zodiacon.HexEditControl {
 		string _filename;
 
 		public ByteBuffer(string filename) {
+			Open(filename);
+		}
+
+		void Open(string filename) {
 			_filename = filename;
 			_size = new FileInfo(filename).Length;
 			_memFile = MemoryMappedFile.CreateFromFile(filename);
@@ -72,6 +76,10 @@ namespace Zodiacon.HexEditControl {
 			}
 			_currentChange = newchange;
 			_lastChangeSize = newchange.Size;
+
+			if (!newchange.Overwrite)
+				_size += newchange.Size;
+
 		}
 
 		public int GetBytes(long offset, int size, byte[] bytes, int startIndex = 0, IList<OffsetRange> changes = null) {
@@ -239,6 +247,10 @@ namespace Zodiacon.HexEditControl {
 				File.WriteAllBytes(filename, bytes);
 			}
 			else {
+				Dispose();
+				File.Copy(_filename, filename);
+				_filename = filename;
+				ApplyChanges();
 			}
 			DiscardChanges();
 		}

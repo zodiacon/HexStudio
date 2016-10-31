@@ -13,7 +13,7 @@ namespace HexEditControl.Tests {
 
 			int hash = size;
 			for (int i = index; i < size + index; i++)
-				hash = unchecked(hash * 314159 + bytes[i]);
+				hash = unchecked(hash * 17 + bytes[i]);
 			return hash;
 		}
 
