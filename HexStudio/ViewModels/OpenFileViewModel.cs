@@ -24,7 +24,7 @@ namespace HexStudio.ViewModels {
 
 			RevertFileCommand = new DelegateCommand(() => {
 				_editor.DiscardChanges();
-			}, () => IsModified).ObservesProperty(() => IsModified);
+			}, () => IsModified && FileName != null).ObservesProperty(() => IsModified).ObservesProperty(() => FileName);
 
 			CloseCommand = new DelegateCommand(() => {
 				if (IsModified) {

@@ -58,14 +58,18 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ByteBuffer.cs" />
-    <Compile Include="Commands\InsertBufferCommand.cs" />
-    <Compile Include="Commands\InsertWordCommand.cs" />
+    <Compile Include="ByteRange.cs" />
     <Compile Include="EditChange.cs" />
+    <Compile Include="IEditOperation.cs" />
+    <Compile Include="FileRange.cs" />
     <Compile Include="HexEdit.Prperties.cs" />
     <Compile Include="HexEdit.xaml.cs">
       <DependentUpon>HexEdit.xaml</DependentUpon>
     </Compile>
+    <Compile Include="IDataRange.cs" />
     <Compile Include="OffsetRange.cs" />
+    <Compile Include="Operations\InsertDataOperation.cs" />
+    <Compile Include="Operations\OverwriteDataOperation.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -79,6 +83,7 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
+    <Compile Include="Range.cs" />
     <Compile Include="RenderState.cs" />
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
@@ -97,6 +102,7 @@
       <SubType>Designer</SubType>
     </Page>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

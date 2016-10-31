@@ -6,6 +6,7 @@ using System.IO.MemoryMappedFiles;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Zodiacon.WPF;
 
 namespace Zodiacon.HexEditControl {
 	public class ByteBuffer : IDisposable {
@@ -15,6 +16,8 @@ namespace Zodiacon.HexEditControl {
 		readonly List<EditChange> _changes = new List<EditChange>();
 		byte[] _byteBuffer;
 		string _filename;
+		readonly List<IEditOperation> _operations = new List<IEditOperation>(64);
+		readonly List<IDataRange> _dataRanges = new List<IDataRange>();
 
 		public ByteBuffer(string filename) {
 			Open(filename);
@@ -25,6 +28,8 @@ namespace Zodiacon.HexEditControl {
 			_size = new FileInfo(filename).Length;
 			_memFile = MemoryMappedFile.CreateFromFile(filename);
 			_accessor = _memFile.CreateViewAccessor();
+			_dataRanges.Clear();
+			_dataRanges.Add(new FileRange(0, 0, _size, _accessor));
 		}
 
 		public ByteBuffer(long size, long limit) {
@@ -43,8 +48,6 @@ namespace Zodiacon.HexEditControl {
 		int _lastChangeIndex = -1;
 		EditChange _currentChange;
 		int _lastChangeSize;
-
-		public bool Expandable { get; set; } = true;
 
 		public void AddChange(EditChange change) {
 			AddChangeInternal(change);
@@ -97,7 +100,6 @@ namespace Zodiacon.HexEditControl {
 				|| (ch.Offset > offset && ch.Offset + ch.Size <= offset + size));
 
 			foreach (var change in inrange) {
-				//int temp = (int)Math.Min(change.Offset - fileOffset, change.Offset - currentIndex);
 				var count = Math.Min((int)(change.Offset - currentOffset), size - currentIndex);
 				int sourceIndex = 0;
 				if (count > 0) {
@@ -223,6 +225,8 @@ namespace Zodiacon.HexEditControl {
 			_changes.Clear();
 			_currentChange = null;
 			_lastChangeIndex = -1;
+			_size = new FileInfo(_filename).Length;
+			_dataRanges.RemoveRange(1, _dataRanges.Count - 1);
 		}
 
 		public void Dispose() {
@@ -254,5 +258,89 @@ namespace Zodiacon.HexEditControl {
 			}
 			DiscardChanges();
 		}
+
+		public void AddOperation(IEditOperation operation) {
+			_operations.Add(operation);
+			UpdateDataRanges(operation);			
+		}
+
+		private void UpdateDataRanges(IEditOperation operation) {
+			long startOffset = operation.Offset;
+
+			for(int i = 0; i < _dataRanges.Count; i++) {
+				var dr = _dataRanges[i];
+				if (dr.Offset + dr.Size < operation.Offset)
+					continue;
+
+				var range = dr.ToRange();
+				var op_range = operation.ToRange();
+
+				if (op_range.GetIntersection(range) == range) {
+					// range is completely inside the range of the new operation. remove the range
+					_dataRanges.RemoveAt(i);
+					i--;
+					continue;
+				}
+				else if (range.GetIntersection(op_range) == op_range) {
+					// completely within the existing one
+					// split into three data regions
+					SplitRegion(dr, i, operation);
+					break;
+				}
+				else {
+					// partial overlap
+					// find overlap extent - may have more regions completely covered
+					while (i + 1 < _dataRanges.Count) {
+						var r = _dataRanges[i + 1].ToRange();
+						if (op_range.GetIntersection(r) == r) {
+							// can remove region
+							_dataRanges.RemoveAt(i);
+						}
+						else
+							break;
+					}
+					// region i and i+1 are to be treated (i+1 may not exist)
+					SplitOverlapRegions(i, operation);
+					break;
+				}
+			}
+		}
+
+		private void SplitOverlapRegions(int i, IEditOperation operation) {
+			// get the regions
+			var dr1 = _dataRanges[i];
+
+			// first region (left)
+			var r1 = dr1.GetSubRange(dr1.Offset, operation.Offset - dr1.Offset);
+
+			switch (operation.Type) {
+			}
+		}
+
+		private void SplitRegion(IDataRange dr, int index, IEditOperation operation) {
+			switch (operation.Type) {
+				case OperationType.OverwriteData:
+					// simplest, create the regions
+					var dr1 = dr.GetSubRange(dr.Offset, operation.Offset - dr.Offset);
+					var dr3 = dr.GetSubRange(operation.Offset + operation.Count, dr.Size - operation.Count - dr1.Size);
+					var dr2 = new ByteRange(operation.Offset, operation.Data.ToArray());
+					_dataRanges.RemoveAt(index);
+					_dataRanges.InsertRange(index, new IDataRange[] { dr1, dr2, dr3 });
+					break;
+
+				case OperationType.InsertData:
+					var dr4 = dr.GetSubRange(dr.Offset, operation.Offset - dr.Offset);
+					var dr5 = dr.GetSubRange(operation.Offset, dr.Size - dr4.Size);
+					var dr6 = new ByteRange(operation.Offset, operation.Data.ToArray());
+					_dataRanges.RemoveAt(index);
+					_dataRanges.InsertRange(index, new IDataRange[] { dr4, dr5, dr6 });
+					_size += operation.Count;
+					break;
+			}
+		}
+
+		public void PopOperation() {
+		}
+
 	}
 }

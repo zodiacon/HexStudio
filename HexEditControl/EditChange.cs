@@ -39,6 +39,20 @@ namespace Zodiacon.HexEditControl {
 		public bool Intersect(long offset, int size) {
 			return offset >= Offset && offset + size <= Offset + Size;
 		}
+
+		public Tuple<EditChange, EditChange> Split(EditChange change) {
+			if (!Intersect(change.Offset, change.Size))
+				return null;
+
+			EditChange left = null, right = null;
+			if (change.Offset > Offset)
+				left = new EditChange(Offset, Data.Take((int)(change.Offset - Offset)).ToArray());
+
+			if (change.Offset + change.Size < Offset + Size)
+				right = new EditChange(change.Offset + change.Size, Data.Take((int)(Offset + Size - change.Offset - change.Size)).ToArray());
+
+			return Tuple.Create(left, right);
+		}
 	}
 
 }

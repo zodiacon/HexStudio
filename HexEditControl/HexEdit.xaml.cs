@@ -180,7 +180,7 @@ namespace Zodiacon.HexEditControl {
 						dc.DrawRectangle(SelectionBackground, null, new Rect(x + (j - i) / WordSize * (2 * WordSize + 1) * _charWidth, pos, _charWidth * WordSize * 2, FontSize));
 					}
 
-					var changed = changes.Any(change => j >= change.Start && j < change.Start + change.Count);
+					var changed = changes.Any(change => j >= change.Offset && j < change.Offset + change.Count);
 					if (changed) {
 						_hexChangesString.Append(bitConverter(_readBuffer, bufIndex)).Append(" ");
 						_hexString.Append(space);
@@ -236,7 +236,7 @@ namespace Zodiacon.HexEditControl {
 						dc.DrawRectangle(SelectionBackground, null, new Rect(x + _charWidth * (j - i), pos, _charWidth, FontSize));
 					}
 
-					var changed = changes.Any(change => j >= change.Start && j < change.Start + change.Count);
+					var changed = changes.Any(change => j >= change.Offset && j < change.Offset + change.Count);
 
 					ch = (char)_readBuffer[j - start];
 					if (changed) {
