@@ -152,7 +152,7 @@ namespace HexStudio.ViewModels {
 			}
 		}
 
-		private bool _overwriteMode = true;
+		private bool _overwriteMode = false;
 
 		public bool OverwriteMode {
 			get { return _overwriteMode; }

@@ -26,7 +26,7 @@ namespace Zodiacon.HexEditControl {
 		public ByteBuffer(long size, long limit) {
 			_memFile = MemoryMappedFile.CreateNew(null, limit);
 			_accessor = _memFile.CreateViewAccessor();
-			_size = 1;
+			_size = size;
 		}
 
 		public ByteBuffer(byte[] buffer) {
@@ -39,6 +39,8 @@ namespace Zodiacon.HexEditControl {
 		int _lastChangeIndex = -1;
 		EditChange _currentChange;
 		int _lastChangeSize;
+
+		public bool Expandable { get; set; } = true;
 
 		public void AddChange(EditChange change) {
 			AddChangeInternal(change);
@@ -73,6 +75,8 @@ namespace Zodiacon.HexEditControl {
 		}
 
 		public int GetBytes(long offset, int size, byte[] bytes, int startIndex = 0, IList<OffsetRange> changes = null) {
+			if (size > Size)
+				size = (int)Size;
 			// get insert type changes to this point
 			long fileOffset = _changes.Where(change => !change.Overwrite).TakeWhile(change => change.Offset + change.Size < offset).Sum(change => change.Size);
 			fileOffset += offset;
@@ -82,7 +86,7 @@ namespace Zodiacon.HexEditControl {
 
 			var inrange = _changes.Where(ch => (ch.Offset + ch.Size >= offset && ch.Offset - ch.Size < offset) ||
 				(ch.Offset - ch.Size < offset + size && ch.Offset + ch.Size > offset + size)
-				|| (ch.Offset > offset && ch.Offset + ch.Size < offset + size));
+				|| (ch.Offset > offset && ch.Offset + ch.Size <= offset + size));
 
 			foreach (var change in inrange) {
 				//int temp = (int)Math.Min(change.Offset - fileOffset, change.Offset - currentIndex);
@@ -97,8 +101,6 @@ namespace Zodiacon.HexEditControl {
 				else if (count < 0) {
 					// change started before offset
 						sourceIndex = -count;
-					//else
-					//	sourceIndex = -count - change.Size;
 				}
 
 				// now get data from the change
@@ -225,6 +227,20 @@ namespace Zodiacon.HexEditControl {
 				_memFile = null;
 			}
 
+		}
+
+		public void SaveToFile(string filename) {
+			if (string.IsNullOrEmpty(_filename)) {
+				// new file, just get everything out
+
+				byte[] bytes = _byteBuffer ?? new byte[Size];
+				if (_byteBuffer == null)
+					GetBytes(0, (int)Size, bytes);
+				File.WriteAllBytes(filename, bytes);
+			}
+			else {
+			}
+			DiscardChanges();
 		}
 	}
 }

@@ -8,10 +8,21 @@
              KeyDown="Grid_KeyDown" Focusable="False" >
     <Grid Background="Transparent" MouseWheel="Grid_MouseWheel" MouseMove="Grid_MouseMove" MouseLeftButtonDown="_scroll_MouseLeftButtonDown" MouseLeftButtonUp="Grid_MouseLeftButtonUp" x:Name="_root"
           Focusable="True">
+        <Grid.FocusVisualStyle>
+            <Style >
+                <Setter Property="Control.Template">
+                    <Setter.Value>
+                        <ControlTemplate>
+                            
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </Grid.FocusVisualStyle>
         <ScrollBar x:Name="_scroll" HorizontalAlignment="Right" ValueChanged="_scroll_ValueChanged" SmallChange="{Binding SmallChange, ElementName=This, FallbackValue=25}"
                    LargeChange="{Binding LargeChange, ElementName=This, FallbackValue=150}"
                    />
-        <Rectangle HorizontalAlignment="Left" VerticalAlignment="Top" Width="{DynamicResource {x:Static SystemParameters.CaretWidthKey}}" Height="{Binding FontSize, ElementName=This}"
+        <Rectangle HorizontalAlignment="Left" VerticalAlignment="Top" Height="{Binding FontSize, ElementName=This}"
                    Fill="{Binding CaretFill, ElementName=This, FallbackValue=Black}" IsHitTestVisible="False"
                    x:Name="_caret">
             <Rectangle.RenderTransform>

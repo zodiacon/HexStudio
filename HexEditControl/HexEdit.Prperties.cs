@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Linq;
+using System.Text;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -11,11 +13,26 @@ namespace Zodiacon.HexEditControl {
 		}
 
 		public static readonly DependencyProperty OverwriteModeProperty =
-			 DependencyProperty.Register(nameof(OverwriteMode), typeof(bool), typeof(HexEdit), new PropertyMetadata(true, (s, e) => ((HexEdit)s).OnOverwriteModeChanged(e)));
+			 DependencyProperty.Register(nameof(OverwriteMode), typeof(bool), typeof(HexEdit), 
+				 new PropertyMetadata(false, (s, e) => ((HexEdit)s).OnOverwriteModeChanged(e)));
 
 		private void OnOverwriteModeChanged(DependencyPropertyChangedEventArgs e) {
 			ClearChange();
+			UpdateCaretWidth();
 		}
+
+		void UpdateCaretWidth() {
+			_caret.Width = OverwriteMode ? _charWidth : SystemParameters.CaretWidth;
+		}
+
+		public Brush EditForeground {
+			get { return (Brush)GetValue(EditForegroundProperty); }
+			set { SetValue(EditForegroundProperty, value); }
+		}
+
+		public static readonly DependencyProperty EditForegroundProperty =
+			 DependencyProperty.Register(nameof(EditForeground), typeof(Brush), typeof(HexEdit), 
+				 new FrameworkPropertyMetadata(Brushes.Red, FrameworkPropertyMetadataOptions.AffectsRender));
 
 		public long CaretOffset {
 			get { return (long)GetValue(CaretOffsetProperty); }
@@ -32,8 +49,8 @@ namespace Zodiacon.HexEditControl {
 				offset = 0;
 			else if (_sizeLimit > 0 && offset >= _sizeLimit)
 				offset = _sizeLimit - 1;
-			else if (offset >= _hexBuffer.Size && !IsReadOnly)
-				offset = _hexBuffer.Size - 1;
+			else if (_hexBuffer != null && offset > _hexBuffer.Size)
+				offset = _hexBuffer.Size;
 			return offset;
 		}
 
@@ -96,7 +113,8 @@ namespace Zodiacon.HexEditControl {
 		}
 
 		public static readonly DependencyProperty WordSizeProperty =
-			 DependencyProperty.Register("WordSize", typeof(int), typeof(HexEdit), new PropertyMetadata(1, (s, e) => ((HexEdit)s).Refresh()), ValidateWordSize);
+			 DependencyProperty.Register("WordSize", typeof(int), typeof(HexEdit), new PropertyMetadata(1, 
+				 (s, e) => ((HexEdit)s).Refresh()), ValidateWordSize);
 
 		public Brush SelectionBackground {
 			get { return (Brush)GetValue(SelectionBackgroundProperty); }
@@ -158,12 +176,22 @@ namespace Zodiacon.HexEditControl {
 					// too large, raise event
 				}
 				else {
-					//Clipboard.SetData(DataFormats.Serializable, bytes);
+					var bytes = new byte[count];
+					_hexBuffer.GetBytes(SelectionStart, (int)count, bytes);
+					Clipboard.SetData(DataFormats.Serializable, bytes);
+					Clipboard.SetText(FormatBytes(bytes, WordSize));
 				}
 			}
 			catch (OutOfMemoryException) {
 
 			}
+		}
+
+		private string FormatBytes(byte[] bytes, int wordSize) {
+			var sb = new StringBuilder((wordSize + 1) * bytes.Length);
+			for(int i = 0; i < bytes.Length; i += wordSize)
+				sb.Append(_bitConverters[_bitConverterIndex[wordSize]](bytes, i)).Append(" ");
+			return sb.ToString();
 		}
 
 		private void ExecuteSelectAll(ExecutedRoutedEventArgs e) {

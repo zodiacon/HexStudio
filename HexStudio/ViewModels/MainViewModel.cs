@@ -34,7 +34,7 @@ namespace HexStudio.ViewModels {
 			if (!OpenFiles.Any(file => file.IsModified))
 				return true;
 
-			var result = MessageBoxService.ShowMessage("Save modified files before exit?", 
+			var result = MessageBoxService.ShowMessage("Save modified files before exit?",
 				Constants.AppTitle, MessageBoxButton.YesNoCancel, MessageBoxImage.Warning);
 			if (result == MessageBoxResult.Yes) {
 				foreach (var file in OpenFiles)
@@ -42,7 +42,7 @@ namespace HexStudio.ViewModels {
 						file.SaveInternal();
 				return true;
 			}
-		
+
 			return result == MessageBoxResult.No;
 		}
 
@@ -62,7 +62,11 @@ namespace HexStudio.ViewModels {
 
 		public OpenFileViewModel SelectedFile {
 			get { return _selecetdFile; }
-			set { SetProperty(ref _selecetdFile, value); }
+			set {
+				if (SetProperty(ref _selecetdFile, value)) {
+					OnPropertyChanged(nameof(IsSelectedFile));
+				}
+			}
 		}
 
 		public ICommand OpenFileCommand => new DelegateCommand(() => {
@@ -104,5 +108,7 @@ namespace HexStudio.ViewModels {
 			OpenFiles.Add(file);
 			SelectedFile = file;
 		}
+
+		public bool IsSelectedFile => SelectedFile != null;
 	}
 }

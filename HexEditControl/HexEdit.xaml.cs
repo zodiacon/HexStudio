@@ -41,6 +41,7 @@ namespace Zodiacon.HexEditControl {
 			CreateNew();
 
 			Loaded += delegate {
+				UpdateCaretWidth();
 				_root.Focus();
 			};
 		}
@@ -56,7 +57,7 @@ namespace Zodiacon.HexEditControl {
 
 
 		private void _timer_Tick(object sender, EventArgs e) {
-			if (CaretOffset < 0)
+			if (CaretOffset < 0 && _hexBuffer.Size > 0)
 				_caret.Visibility = Visibility.Collapsed;
 			else
 				_caret.Visibility = _caret.Visibility == Visibility.Collapsed ? Visibility.Visible : Visibility.Collapsed;
@@ -76,14 +77,14 @@ namespace Zodiacon.HexEditControl {
 			InvalidateVisual();
 			if (CaretOffset >= 0) {
 				ClearChange();
-				CaretOffset = CaretOffset - CaretOffset % WordSize;
+				CaretOffset -= CaretOffset % WordSize;
 				SetCaretPosition(CaretOffset);
 			}
 		}
 
 		public void CreateNew(long sizeLimit = 1 << 20) {
 			Dispose();
-			_hexBuffer = new ByteBuffer(WordSize, _sizeLimit = sizeLimit);
+			_hexBuffer = new ByteBuffer(0, _sizeLimit = sizeLimit);
 		}
 
 		public void OpenFile(string filename) {
@@ -111,7 +112,7 @@ namespace Zodiacon.HexEditControl {
 		StringBuilder _hexChangesString = new StringBuilder(256);     // changes string
 
 		protected override void OnRender(DrawingContext dc) {
-			if (_hexBuffer == null || _hexBuffer.Size == 0 || ActualHeight < 5) return;
+			if (_hexBuffer == null || ActualHeight < 5) return;
 
 			dc.PushClip(new RectangleGeometry(new Rect(0, 0, ActualWidth, ActualHeight)));
 
@@ -130,12 +131,16 @@ namespace Zodiacon.HexEditControl {
 				end = _hexBuffer.Size;
 
 			var maxWidth = 0.0;
-			for (long i = start; i < end; i += BytesPerLine) {
+			bool empty = _hexBuffer.Size == 0;
+
+			for (long i = start; i < end || empty; i += BytesPerLine) {
 				var pos = 2 + (i / BytesPerLine) * lineHeight + y;
 				var text = new FormattedText(i.ToString("X8") + ": ", CultureInfo.InvariantCulture, FlowDirection.LeftToRight, typeface, FontSize, Foreground);
 				if (text.Width > maxWidth)
 					maxWidth = text.Width;
 				dc.DrawText(text, new Point(2, pos));
+				if (empty)
+					break;
 			}
 
 			var x = maxWidth + 8;
@@ -162,8 +167,6 @@ namespace Zodiacon.HexEditControl {
 			int len = 0;
 
 			int readIndex = 0;
-			int changeIndex = 0;
-
 			for (long i = start; i < end; i += BytesPerLine) {
 				var pos = 2 + (i / BytesPerLine) * lineHeight + y;
 				_hexString.Clear();
@@ -177,7 +180,7 @@ namespace Zodiacon.HexEditControl {
 						dc.DrawRectangle(SelectionBackground, null, new Rect(x + (j - i) / WordSize * (2 * WordSize + 1) * _charWidth, pos, _charWidth * WordSize * 2, FontSize));
 					}
 
-					var changed = _hexBuffer.IsChanged(j, WordSize, ref changeIndex);
+					var changed = changes.Any(change => j >= change.Start && j < change.Start + change.Count);
 					if (changed) {
 						_hexChangesString.Append(bitConverter(_readBuffer, bufIndex)).Append(" ");
 						_hexString.Append(space);
@@ -213,6 +216,9 @@ namespace Zodiacon.HexEditControl {
 				_viewLines++;
 			}
 
+			if (empty) {
+				_offsetsPositions[0] = new Point(x, 2 + y);
+			}
 			_hexDataWidth = maxWidth;
 
 			x = _hexDataXPos + _hexDataWidth + 10;
@@ -230,16 +236,17 @@ namespace Zodiacon.HexEditControl {
 						dc.DrawRectangle(SelectionBackground, null, new Rect(x + _charWidth * (j - i), pos, _charWidth, FontSize));
 					}
 
-					//if (_changes.TryGetValue(j, out change)) {
-					//	ch = (char)change.Value;
-					//	_hexChangesString.Append(char.IsControl(ch) ? '.' : ch);
-					//	_hexString.Append(' ');
-					//}
-					//else {
-					ch = Encoding.ASCII.GetChars(_readBuffer, (int)(j - start), 1)[0];
-					_hexString.Append(char.IsControl(ch) ? '.' : ch);
-					_hexChangesString.Append(' ');
-					//}
+					var changed = changes.Any(change => j >= change.Start && j < change.Start + change.Count);
+
+					ch = (char)_readBuffer[j - start];
+					if (changed) {
+						_hexChangesString.Append(char.IsControl(ch) ? '.' : ch);
+						_hexString.Append(' ');
+					}
+					else {
+						_hexString.Append(char.IsControl(ch) ? '.' : ch);
+						_hexChangesString.Append(' ');
+					}
 				}
 
 				var pt = new Point(x, pos);
@@ -247,7 +254,7 @@ namespace Zodiacon.HexEditControl {
 				var text = new FormattedText(_hexString.ToString(), CultureInfo.InvariantCulture, FlowDirection.LeftToRight, typeface, FontSize, Foreground);
 				dc.DrawText(text, pt);
 
-				text = new FormattedText(_hexChangesString.ToString(), CultureInfo.InvariantCulture, FlowDirection.LeftToRight, typeface, FontSize, Brushes.Red);
+				text = new FormattedText(_hexChangesString.ToString(), CultureInfo.InvariantCulture, FlowDirection.LeftToRight, typeface, FontSize, EditForeground);
 				dc.DrawText(text, pt);
 			}
 
@@ -259,6 +266,8 @@ namespace Zodiacon.HexEditControl {
 		}
 
 		Point GetPositionByOffset(long offset) {
+			if (offset < 0 && _hexBuffer.Size == 0)
+				offset = 0;
 			if (offset >= 0) {
 				var offset2 = offset / BytesPerLine * BytesPerLine;
 				Point pt;
@@ -367,7 +376,7 @@ namespace Zodiacon.HexEditControl {
 			_currentChange = null;
 			_inputIndex = _wordIndex = 0;
 			_lastValue = 0;
-			CaretOffset += WordSize - CaretOffset % WordSize;
+			CaretOffset -= CaretOffset % WordSize;
 		}
 
 		int _inputIndex = 0, _wordIndex = 0;
@@ -391,6 +400,9 @@ namespace Zodiacon.HexEditControl {
 
 			if (_currentChange == null) {
 				// create a new change set
+				var overwrite = OverwriteMode;
+				if (CaretOffset == _hexBuffer.Size)
+					overwrite = false;
 
 				_currentChange = new EditChange(CaretOffset) { Overwrite = OverwriteMode };
 				_hexBuffer.AddChange(_currentChange);
@@ -402,7 +414,6 @@ namespace Zodiacon.HexEditControl {
 			}
 			else {
 				_currentChange.Data[_currentChange.Size - 1] = _lastValue;
-				_hexBuffer.UpdateLastChange();
 			}
 			if (++_inputIndex == 2) {
 				_inputIndex = 0;
@@ -491,18 +502,9 @@ namespace Zodiacon.HexEditControl {
 		}
 
 		public void SaveChangesAs(string newfilename) {
-			//if (_filename == null) {
-			//	var offset = _changes.Max(change => change.Offset);
-			//	SaveChanges();
-
-			//	// new file
-			//	var bytes = new byte[offset];
-			//	_accessor.ReadArray(0, bytes, 0, bytes.Length);
-			//	File.WriteAllBytes(newfilename, bytes);
-			//	_filename = newfilename;
-			//}
-			//else {
-			//}
+			_hexBuffer.SaveToFile(newfilename);
+			IsModified = false;
+			InvalidateVisual();
 		}
 
 		public void DiscardChanges() {
