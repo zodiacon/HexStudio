@@ -7,8 +7,8 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Zodiacon.HexEditControl {
-	[DebuggerDisplay("{Offset}..{Offset+Size-1} (File)")]
-	class FileRange : IDataRange {
+	[DebuggerDisplay("{Range} (File)")]
+	public class FileRange : DataRange {
 		MemoryMappedViewAccessor _accessor;
 
 		public long Offset { get; }
@@ -17,19 +17,21 @@ namespace Zodiacon.HexEditControl {
 
 		public long FileOffset { get; }
 
-		public FileRange(long offset, long fileOffset, long size, MemoryMappedViewAccessor accessor) {
-			Offset = offset;
-			Size = size;
+		public FileRange(Range range, long fileOffset, MemoryMappedViewAccessor accessor) : base(range) {
 			FileOffset = fileOffset;
 			_accessor = accessor;
 		}
 
-		public void GetData(byte[] bytes, int index, int count) {
+		public override void GetData(byte[] bytes, int index, int count) {
 			_accessor.ReadArray(FileOffset + index, bytes, 0, count);
 		}
 
-		public IDataRange GetSubRange(long offset, long count) {
-			return new FileRange(offset, FileOffset + (offset - Offset), count, _accessor);
+		public override DataRange GetSubRange(Range range) {
+			return new FileRange(range, FileOffset + (range.Start - Range.Start), _accessor);
+		}
+
+		public override string ToString() {
+			return $"{{{Range}}} ({Count}) (File offset={FileOffset}) H={Height}";
 		}
 	}
 }

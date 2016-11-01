@@ -6,23 +6,24 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Zodiacon.HexEditControl {
-	[DebuggerDisplay("{Offset}..{Offset+Size-1} (Byte)")]
-	class ByteRange : IDataRange {
-		public long Offset { get; }
-		public long Size => Data.Length;
+	[DebuggerDisplay("{Range} (Byte)")]
+	public class ByteRange : DataRange {
 		public readonly byte[] Data;
 
-		public ByteRange(long offset, byte[] data) {
-			Offset = offset;
+		public ByteRange(long offset, byte[] data) : base(Range.FromStartAndCount(offset, data.Length)) {
 			Data = data;
 		}
 
-		public void GetData(byte[] bytes, int index, int count) {
-			Buffer.BlockCopy(Data, index, bytes, 0, count); 
+		public override DataRange GetSubRange(Range range) {
+			return new ByteRange(range.Start, Data.Skip((int)(range.Start - Range.Start)).Take((int)Range.Count).ToArray());
 		}
 
-		public IDataRange GetSubRange(long offset, long count) {
-			return new ByteRange(offset, Data.Skip((int)(offset - Offset)).Take((int)count).ToArray());
+		public override void GetData(byte[] bytes, int index, int count) {
+			Buffer.BlockCopy(Data, index, bytes, 0, count);
+		}
+
+		public override string ToString() {
+			return $"{{{Range}}} ({Count}) (Byte) H={Height}";
 		}
 	}
 }

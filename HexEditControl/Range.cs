@@ -5,45 +5,59 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Zodiacon.HexEditControl {
-	public struct Range<T> where T : struct, IComparable<T> {
-		public static readonly Range<T> Empty = new Range<T>();
+	public struct Range : IEquatable<Range> {
+		public bool IsEmpty => Count == 0;
 
-		public bool IsEmpty => this == Empty;
+		public long Start { get; }
+		public long End { get; }
+		public long Count => End - Start + 1;
 
-		public T Start { get; }
-		public T End { get; }
-
-		public Range(T start, T end)
+		private Range(long start, long end)
 			 : this() {
 			Start = start;
 			End = end;
 		}
 
-		/// <summary>
-		/// Checks if object in inside range.
-		/// </summary>
-		public bool Contains(T obj) {
+		public static Range FromStartToEnd(long start, long end) {
+			if (start >= end)
+				return new Range();
+			return new Range(start, end);
+		}
+
+		public static Range FromStartAndCount(long start, long count) {
+			return FromStartToEnd(start, start + count - 1);
+		}
+
+		public bool ContainedEntirelyWithin(Range other) {
+			return GetIntersection(other) == this;
+		}
+
+		public bool ContainsEntirely(Range other) {
+			return GetIntersection(other) == other;
+		}
+
+		public bool Contains(long value) {
 			var result = true;
-			result &= Start.CompareTo(obj) <= 0;
-			result &= End.CompareTo(obj) >= 0;
+			result &= Start.CompareTo(value) <= 0;
+			result &= End.CompareTo(value) >= 0;
 
 			return result;
 		}
 
-		public Range<T> GetIntersection(Range<T> other) {
+		public Range GetIntersection(Range other) {
 			if (!Intersects(other))
-				return Range<T>.Empty;
+				return new Range();
 
-			T start, end;
+			long start, end;
 
 			start = Start.CompareTo(other.Start) >= 0 ? Start : other.Start;
 
 			end = End.CompareTo(other.End) < 0 ? End : other.End;
 
-			return new Range<T>(start, end);
+			return new Range(start, end);
 		}
 
-		public bool Intersects(Range<T> other) {
+		public bool Intersects(Range other) {
 			var hasClosedInterval = Start.CompareTo(other.End) <= 0 && other.End.CompareTo(End) <= 0;
 
 			var hasOpenInterval =
@@ -61,23 +75,23 @@ namespace Zodiacon.HexEditControl {
 			return Start.GetHashCode() ^ End.GetHashCode();
 		}
 
-		#region " Operators "
-
-		public static bool operator ==(Range<T> a, Range<T> b) {
+		public static bool operator ==(Range a, Range b) {
 			return a.Start.Equals(b.Start) && a.End.Equals(b.End);
 		}
 
-		public static bool operator !=(Range<T> a, Range<T> b) {
+		public static bool operator !=(Range a, Range b) {
 			return !(a == b);
 		}
 
-		#endregion
-
 		public override bool Equals(object obj) {
-			if (!(obj is Range<T>))
+			if (!(obj is Range))
 				return false;
 
-			return (this == (Range<T>)obj);
+			return (this == (Range)obj);
+		}
+
+		public bool Equals(Range other) {
+			return this == other;
 		}
 	}
 }

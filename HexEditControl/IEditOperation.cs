@@ -20,8 +20,8 @@ namespace Zodiacon.HexEditControl {
 	}
 
 	public static class IEditOperationExtensions {
-		public static Range<long> ToRange(this IEditOperation op) {
-			return new Range<long>(op.Offset, op.Offset + op.Count - 1);
+		public static Range ToRange(this IEditOperation op) {
+			return Range.FromStartAndCount(op.Offset, op.Count);
 		}
 	}
 }

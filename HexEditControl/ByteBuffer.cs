@@ -6,6 +6,7 @@ using System.IO.MemoryMappedFiles;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Zodiacon.HexEditControl.DataStructures;
 using Zodiacon.WPF;
 
 namespace Zodiacon.HexEditControl {
@@ -16,8 +17,7 @@ namespace Zodiacon.HexEditControl {
 		readonly List<EditChange> _changes = new List<EditChange>();
 		byte[] _byteBuffer;
 		string _filename;
-		readonly List<IEditOperation> _operations = new List<IEditOperation>(64);
-		readonly List<IDataRange> _dataRanges = new List<IDataRange>();
+		BinarySearchTree<OffsetAndHeight, DataRange> _dataRanges = new BinarySearchTree<OffsetAndHeight, DataRange>();
 
 		public ByteBuffer(string filename) {
 			Open(filename);
@@ -28,8 +28,7 @@ namespace Zodiacon.HexEditControl {
 			_size = new FileInfo(filename).Length;
 			_memFile = MemoryMappedFile.CreateFromFile(filename);
 			_accessor = _memFile.CreateViewAccessor();
-			_dataRanges.Clear();
-			_dataRanges.Add(new FileRange(0, 0, _size, _accessor));
+			_dataRanges.Add(new OffsetAndHeight(0, 0), new FileRange(Range.FromStartAndCount(0, Size), 0, _accessor));
 		}
 
 		public ByteBuffer(long size, long limit) {
@@ -110,7 +109,7 @@ namespace Zodiacon.HexEditControl {
 				}
 				else if (count < 0) {
 					// change started before offset
-						sourceIndex = -count;
+					sourceIndex = -count;
 				}
 
 				// now get data from the change
@@ -194,7 +193,7 @@ namespace Zodiacon.HexEditControl {
 					// more complex, must move file forward to make room
 					MoveBuffer(change.Offset, change.Size);
 					WriteData(change.Offset, change.Data.ToArray());
-				} 
+				}
 			}
 			if (clearAfterApply) {
 				_changes.Clear();
@@ -204,6 +203,7 @@ namespace Zodiacon.HexEditControl {
 		}
 
 		public static int MoveBufferSize { get; set; } = 1 << 21;
+		public IEnumerable<DataRange> DataRanges => _dataRanges.GetAllNodes().Select(item => item.Value);
 
 		static byte[] _moveBuffer;
 		private void MoveBuffer(long offset, int size) {
@@ -226,7 +226,7 @@ namespace Zodiacon.HexEditControl {
 			_currentChange = null;
 			_lastChangeIndex = -1;
 			_size = new FileInfo(_filename).Length;
-			_dataRanges.RemoveRange(1, _dataRanges.Count - 1);
+			_dataRanges = new BinarySearchTree<OffsetAndHeight, DataRange>();
 		}
 
 		public void Dispose() {
@@ -259,88 +259,12 @@ namespace Zodiacon.HexEditControl {
 			DiscardChanges();
 		}
 
-		public void AddOperation(IEditOperation operation) {
-			_operations.Add(operation);
-			UpdateDataRanges(operation);			
+		public void Overwrite(ByteRange change) {
+			change.Height = _dataRanges.Count;
+			_dataRanges.Add(new OffsetAndHeight(change.Start, change.Height), change);
 		}
 
-		private void UpdateDataRanges(IEditOperation operation) {
-			long startOffset = operation.Offset;
-
-			for(int i = 0; i < _dataRanges.Count; i++) {
-				var dr = _dataRanges[i];
-				if (dr.Offset + dr.Size < operation.Offset)
-					continue;
-
-				var range = dr.ToRange();
-				var op_range = operation.ToRange();
-
-				if (op_range.GetIntersection(range) == range) {
-					// range is completely inside the range of the new operation. remove the range
-					_dataRanges.RemoveAt(i);
-					i--;
-					continue;
-				}
-				else if (range.GetIntersection(op_range) == op_range) {
-					// completely within the existing one
-					// split into three data regions
-					SplitRegion(dr, i, operation);
-					break;
-				}
-				else {
-					// partial overlap
-					// find overlap extent - may have more regions completely covered
-					while (i + 1 < _dataRanges.Count) {
-						var r = _dataRanges[i + 1].ToRange();
-						if (op_range.GetIntersection(r) == r) {
-							// can remove region
-							_dataRanges.RemoveAt(i);
-						}
-						else
-							break;
-					}
-					// region i and i+1 are to be treated (i+1 may not exist)
-					SplitOverlapRegions(i, operation);
-					break;
-				}
-			}
+		public void Insert(ByteRange change) {
 		}
-
-		private void SplitOverlapRegions(int i, IEditOperation operation) {
-			// get the regions
-			var dr1 = _dataRanges[i];
-
-			// first region (left)
-			var r1 = dr1.GetSubRange(dr1.Offset, operation.Offset - dr1.Offset);
-
-			switch (operation.Type) {
-			}
-		}
-
-		private void SplitRegion(IDataRange dr, int index, IEditOperation operation) {
-			switch (operation.Type) {
-				case OperationType.OverwriteData:
-					// simplest, create the regions
-					var dr1 = dr.GetSubRange(dr.Offset, operation.Offset - dr.Offset);
-					var dr3 = dr.GetSubRange(operation.Offset + operation.Count, dr.Size - operation.Count - dr1.Size);
-					var dr2 = new ByteRange(operation.Offset, operation.Data.ToArray());
-					_dataRanges.RemoveAt(index);
-					_dataRanges.InsertRange(index, new IDataRange[] { dr1, dr2, dr3 });
-					break;
-
-				case OperationType.InsertData:
-					var dr4 = dr.GetSubRange(dr.Offset, operation.Offset - dr.Offset);
-					var dr5 = dr.GetSubRange(operation.Offset, dr.Size - dr4.Size);
-					var dr6 = new ByteRange(operation.Offset, operation.Data.ToArray());
-					_dataRanges.RemoveAt(index);
-					_dataRanges.InsertRange(index, new IDataRange[] { dr4, dr5, dr6 });
-					_size += operation.Count;
-					break;
-			}
-		}
-
-		public void PopOperation() {
-		}
-
 	}
 }

@@ -32,8 +32,8 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Prism, Version=6.1.0.0, Culture=neutral, PublicKeyToken=91a96d2a154366d8, processorArchitecture=MSIL">
-      <HintPath>..\packages\Prism.Core.6.1.0\lib\net45\Prism.dll</HintPath>
+    <Reference Include="Prism, Version=6.2.0.0, Culture=neutral, PublicKeyToken=91a96d2a154366d8, processorArchitecture=MSIL">
+      <HintPath>..\packages\Prism.Core.6.2.0\lib\net45\Prism.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
@@ -59,6 +59,8 @@
   <ItemGroup>
     <Compile Include="ByteBuffer.cs" />
     <Compile Include="ByteRange.cs" />
+    <Compile Include="DataStructures\BinarySearchTree.cs" />
+    <Compile Include="DataStructures\Node.cs" />
     <Compile Include="EditChange.cs" />
     <Compile Include="IEditOperation.cs" />
     <Compile Include="FileRange.cs" />
@@ -66,7 +68,8 @@
     <Compile Include="HexEdit.xaml.cs">
       <DependentUpon>HexEdit.xaml</DependentUpon>
     </Compile>
-    <Compile Include="IDataRange.cs" />
+    <Compile Include="DataRange.cs" />
+    <Compile Include="OffsetAndHeight.cs" />
     <Compile Include="OffsetRange.cs" />
     <Compile Include="Operations\InsertDataOperation.cs" />
     <Compile Include="Operations\OverwriteDataOperation.cs" />
@@ -89,6 +92,7 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+    <None Include="app.config" />
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
