@@ -26,4 +26,27 @@ namespace Zodiacon.HexEditControl {
 		}
 	}
 
+	sealed class EmptyDataRange : DataRange {
+		public static readonly DataRange Instance = new EmptyDataRange();
+
+		private EmptyDataRange() : base(Range.FromStartToEnd(-1, -2)) {
+		}
+
+		public override void GetData(int srcIndex, byte[] buffer, int dstIndex, int count) {
+			throw new NotImplementedException();
+		}
+
+		public override DataRange GetSubRange(Range range) {
+			throw new NotImplementedException();
+		}
+
+		public override void Shift(long offset) {
+			throw new NotImplementedException();
+		}
+
+		public override void WriteData(long position, MemoryMappedViewAccessor accessor) {
+			throw new NotImplementedException();
+		}
+	}
+
 }

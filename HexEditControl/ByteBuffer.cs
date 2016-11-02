@@ -73,7 +73,8 @@ namespace Zodiacon.HexEditControl {
 
 		public void ApplyChanges() {
 			Dispose();
-			_memFile = MemoryMappedFile.CreateFromFile(_filename, FileMode.Open, null, Size);
+			long fileSize = new FileInfo(_filename).Length;
+			_memFile = MemoryMappedFile.CreateFromFile(_filename, FileMode.Open, null, Math.Max(Size, fileSize));
 			_accessor = _memFile.CreateViewAccessor();
 
 			foreach (var dr in _dataRanges.Values.OfType<FileRange>()) {
@@ -81,6 +82,15 @@ namespace Zodiacon.HexEditControl {
 			}
 			foreach (var dr in _dataRanges.Values.OfType<ByteRange>()) {
 				dr.WriteData(dr.Start, _accessor);
+			}
+
+			if (fileSize > Size) {
+				Dispose();
+				using (var stm = File.OpenWrite(_filename))
+					stm.SetLength(Size);
+				File.SetLastWriteTime(_filename, DateTime.Now);
+				_memFile = MemoryMappedFile.CreateFromFile(_filename, FileMode.Open, null, 0);
+				_accessor = _memFile.CreateViewAccessor();
 			}
 
 			DiscardChanges();
@@ -263,9 +273,6 @@ namespace Zodiacon.HexEditControl {
 				//shift the rightmost ranges in reverse order to prevent accidental overlap
 				ranges = _dataRanges.Values;
 
-				//if (_dataRanges.ContainsKey(change.Start))
-				//	i--;
-
 				for (int j = ranges.Count - 1; j > i; --j) {
 					dr = ranges[j];
 					_dataRanges.Remove(dr.Start);
@@ -276,6 +283,56 @@ namespace Zodiacon.HexEditControl {
 				// finally, insert the change
 				_dataRanges.Add(change.Start, change);
 				_size += change.Count;
+			}
+		}
+
+		public void Delete(Range range) {
+			// look for entire ranges to remove
+
+			var ranges = _dataRanges.Values;
+			for (int i = ranges.Count - 1; i >= 0; --i) {
+				var dr = ranges[i];
+				if (dr.Range == range) {
+					// dr can be removed
+					_dataRanges.RemoveAt(i);
+					for (int j = _dataRanges.Count - 1; j >= i; --j) {
+						var dr1 = _dataRanges.Values[j];
+						dr1.Shift(-range.Count);
+						_dataRanges.RemoveAt(j);
+						_dataRanges.Add(dr1.Start, dr1);
+					}
+					_size -= range.Count;
+					break;
+				}
+				else if (dr.Range.ContainsEntirely(range)) {
+					// split dr into two ranges
+					var left = dr.GetSubRange(Range.FromStartToEnd(dr.Start, range.Start - 1));
+					var right = dr.GetSubRange(Range.FromStartToEnd(range.End + 1, dr.End));
+
+					// remove range and replace with two other
+					_dataRanges.RemoveAt(i);
+
+					for (int j = _dataRanges.Count - 1; j >= i; --j) {
+						var dr1 = _dataRanges.Values[j];
+						dr1.Shift(-range.Count);
+						_dataRanges.RemoveAt(j);
+						_dataRanges.Add(dr1.Start, dr1);
+					}
+
+					if (!left.Range.IsEmpty)
+						_dataRanges.Add(left.Start, left);
+
+					if (!right.Range.IsEmpty) {
+						right.Shift(-range.Count);
+						_dataRanges.Add(right.Start, right);
+					}
+					_size -= range.Count;
+					break;
+				}
+				else {
+					// complex overlap
+					int zz = 9;
+				}
 			}
 		}
 

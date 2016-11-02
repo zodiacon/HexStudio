@@ -31,9 +31,11 @@ namespace Zodiacon.HexEditControl {
 		}
 
 		public override DataRange GetSubRange(Range range) {
+			Debug.Assert(!range.IsEmpty);
+
 			var isec = range.GetIntersection(Range);
 			if (isec.IsEmpty)
-				return null;
+				return EmptyDataRange.Instance;
 
 			return new ByteRange(range.Start, Data.Skip((int)(isec.Start - Range.Start)).Take((int)isec.Count).ToArray());
 		}

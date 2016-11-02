@@ -350,6 +350,21 @@ namespace Zodiacon.HexEditControl {
 							CaretOffset -= BytesPerLine * _viewLines;
 						break;
 
+					case Key.Back:
+						if (CaretOffset < WordSize)
+							break;
+						CaretOffset -= WordSize;
+						goto case Key.Delete;
+
+					case Key.Delete:
+						// delete
+						ClearChange();
+						_hexBuffer.Delete(Range.FromStartAndCount(CaretOffset, WordSize));
+						if (!IsModified)
+							IsModified = true;
+						InvalidateVisual();
+						break;
+
 					default:
 						arrowKey = false;
 						if (modifiers == ModifierKeys.None)

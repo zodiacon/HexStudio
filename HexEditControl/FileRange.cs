@@ -23,6 +23,9 @@ namespace Zodiacon.HexEditControl {
 		}
 
 		public override DataRange GetSubRange(Range range) {
+			if (range.IsEmpty)
+				return EmptyDataRange.Instance;
+
 			return new FileRange(range, FileOffset + (range.Start - Range.Start), _accessor);
 		}
 
