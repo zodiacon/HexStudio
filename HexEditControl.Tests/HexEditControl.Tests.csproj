@@ -52,12 +52,9 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
-    <Compile Include="ByteBufferOverlapTests.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="Helpers.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="ByteBufferInsertTests.cs" />
-    <Compile Include="EditChangeTests.cs" />
     <Compile Include="DataRangeTests.cs" />
   </ItemGroup>
   <ItemGroup>

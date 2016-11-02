@@ -13,11 +13,10 @@ namespace Zodiacon.HexEditControl {
 	public class ByteBuffer : IDisposable {
 		MemoryMappedViewAccessor _accessor;
 		MemoryMappedFile _memFile;
-		long _size;
-		readonly List<EditChange> _changes = new List<EditChange>();
 		byte[] _byteBuffer;
+		long _size;
 		string _filename;
-		SortedList<long, DataRange> _dataRanges = new SortedList<long, DataRange>(32);
+		SortedList<long, DataRange> _dataRanges = new SortedList<long, DataRange>(64);
 
 		public ByteBuffer(string filename) {
 			Open(filename);
@@ -28,7 +27,9 @@ namespace Zodiacon.HexEditControl {
 			_size = new FileInfo(filename).Length;
 			_memFile = MemoryMappedFile.CreateFromFile(filename);
 			_accessor = _memFile.CreateViewAccessor();
+			_dataRanges.Clear();
 			_dataRanges.Add(0, new FileRange(Range.FromStartAndCount(0, Size), 0, _accessor));
+			_currentRange = null;
 		}
 
 		public ByteBuffer(long size, long limit) {
@@ -44,91 +45,11 @@ namespace Zodiacon.HexEditControl {
 
 		public long Size => _size;
 
-		int _lastChangeIndex = -1;
-		EditChange _currentChange;
-		int _lastChangeSize;
-
-		public void AddChange(EditChange change) {
-			AddChangeInternal(change);
-		}
-
-		public void AddChange(long offset, byte[] data, bool overwrite) {
-			var newchange = new EditChange(offset, data) {
-				Overwrite = overwrite
-			};
-
-			AddChangeInternal(newchange);
-		}
-
-		private void AddChangeInternal(EditChange newchange) {
-			var offset = newchange.Offset;
-			var data = newchange.Data;
-			var insertion = _changes.FindIndex(0, ch => ch.Offset > offset);
-			if (insertion >= 0) {
-				_changes.Insert(insertion, newchange);
-				_lastChangeIndex = insertion;
-				if (!newchange.Overwrite) {
-					for (int i = insertion + 1; i < _changes.Count; i++)
-						_changes[i].UpdateOffset(data.Count);
-				}
-			}
-			else {
-				_changes.Add(newchange);
-				_lastChangeIndex = _changes.Count - 1;
-			}
-			_currentChange = newchange;
-			_lastChangeSize = newchange.Size;
-
-			if (!newchange.Overwrite)
-				_size += newchange.Size;
-
-		}
-
-		public int GetBytes(long offset, int size, byte[] bytes, int startIndex = 0, IList<OffsetRange> changes = null) {
-			if (size > Size)
-				size = (int)Size;
-			// get insert type changes to this point
-			long fileOffset = _changes.Where(change => !change.Overwrite).TakeWhile(change => change.Offset + change.Size < offset).Sum(change => change.Size);
-			fileOffset += offset;
-
-			long currentOffset = offset;
-			int currentIndex = 0;
-
-			var inrange = _changes.Where(ch => (ch.Offset + ch.Size >= offset && ch.Offset - ch.Size < offset) ||
-				(ch.Offset - ch.Size < offset + size && ch.Offset + ch.Size > offset + size)
-				|| (ch.Offset > offset && ch.Offset + ch.Size <= offset + size));
-
-			foreach (var change in inrange) {
-				var count = Math.Min((int)(change.Offset - currentOffset), size - currentIndex);
-				int sourceIndex = 0;
-				if (count > 0) {
-					ReadData(bytes, fileOffset, currentIndex + startIndex, count);
-					fileOffset += count;
-					currentIndex += count;
-					currentOffset += count;
-				}
-				else if (count < 0) {
-					// change started before offset
-					sourceIndex = -count;
-				}
-
-				// now get data from the change
-				count = Math.Min(change.Size, size - currentIndex) - sourceIndex;
-				change.Data.CopyTo(sourceIndex, bytes, currentIndex + startIndex, count);
-
-				if (changes != null)
-					changes.Add(new OffsetRange(change.Offset, change.Size));
-
-				currentIndex += count;
-				if (change.Overwrite)
-					fileOffset += count;
-				currentOffset += count;
-			}
-			if (currentIndex < size) {
-				ReadData(bytes, fileOffset, currentIndex + startIndex, size - currentIndex);
-				currentIndex = size;
-			}
-			return currentIndex;
+		ByteRange _currentRange;
+		bool _overwrite;
+		public void AddChange(ByteRange change, bool overwrite) {
+			_currentRange = change;
+			_overwrite = overwrite;
 		}
 
 		private void ReadData(byte[] bytes, long fileOffset, int currentIndex, int count) {
@@ -136,31 +57,6 @@ namespace Zodiacon.HexEditControl {
 				_accessor.ReadArray(fileOffset, bytes, currentIndex, count);
 			else
 				Array.Copy(_byteBuffer, fileOffset, bytes, currentIndex, count);
-		}
-
-		public bool IsChanged(long offset, int size, ref int changeIndex) {
-			for (int i = changeIndex; i < _changes.Count; i++) {
-				if (_changes[i].Intersect(offset, size)) {
-					changeIndex = i;
-					return true;
-				}
-			}
-			return false;
-		}
-
-		public void UpdateLastChange() {
-			if (_currentChange != null && _currentChange.Size != _lastChangeSize) {
-				Debug.Assert(_lastChangeIndex >= 0);
-
-				if (!_currentChange.Overwrite) {
-					// update following changes if it's an insert
-					_size += _currentChange.Size - _lastChangeSize;
-
-					foreach (var change in _changes.Skip(_lastChangeIndex + 1))
-						change.UpdateOffset(1);
-					_lastChangeSize = _currentChange.Size;
-				}
-			}
 		}
 
 		void WriteData(long offset, byte[] data, int count = 0) {
@@ -179,54 +75,28 @@ namespace Zodiacon.HexEditControl {
 			}
 		}
 
-		public void ApplyChanges(bool clearAfterApply = true) {
+		public void ApplyChanges() {
 			Dispose();
 			_memFile = MemoryMappedFile.CreateFromFile(_filename, FileMode.Open, null, Size);
 			_accessor = _memFile.CreateViewAccessor();
 
-			foreach (var change in _changes) {
-				// apply change
-				if (change.Overwrite) {
-					WriteData(change.Offset, change.Data.ToArray());
-				}
-				else {
-					// more complex, must move file forward to make room
-					MoveBuffer(change.Offset, change.Size);
-					WriteData(change.Offset, change.Data.ToArray());
-				}
+			foreach (var dr in _dataRanges.Values) {
+				dr.WriteData(dr.Start, _accessor);
 			}
-			if (clearAfterApply) {
-				_changes.Clear();
-				_currentChange = null;
-				_lastChangeIndex = -1;
-			}
+
+			DiscardChanges();
+			_dataRanges.Clear();
+			_dataRanges.Add(0, new FileRange(Range.FromStartAndCount(0, Size), 0, _accessor));
 		}
 
 		public static int MoveBufferSize { get; set; } = 1 << 21;
 		public IEnumerable<DataRange> DataRanges => _dataRanges.Select(item => item.Value);
 
-		static byte[] _moveBuffer;
-		private void MoveBuffer(long offset, int size) {
-			if (_moveBuffer == null)
-				_moveBuffer = new byte[MoveBufferSize];
-
-			var count = _size - offset;
-
-			while (count > 0) {
-				var read = Math.Min(_moveBuffer.Length, count);
-				ReadData(_moveBuffer, offset, 0, (int)read);
-				WriteData(offset + size, _moveBuffer, (int)read);
-				count -= read;
-				offset += read;
-			}
-		}
-
 		public void DiscardChanges() {
-			_changes.Clear();
-			_currentChange = null;
-			_lastChangeIndex = -1;
 			_size = new FileInfo(_filename).Length;
 			_dataRanges.Clear();
+			_dataRanges.Add(0, new FileRange(Range.FromStartAndCount(0, _size), 0, _accessor));
+			_currentRange = null;
 		}
 
 		public void Dispose() {
@@ -249,14 +119,50 @@ namespace Zodiacon.HexEditControl {
 				if (_byteBuffer == null)
 					GetBytes(0, (int)Size, bytes);
 				File.WriteAllBytes(filename, bytes);
+				Open(filename);
 			}
 			else {
 				Dispose();
-				File.Copy(_filename, filename);
+				File.Copy(_filename, filename, true);
 				_filename = filename;
 				ApplyChanges();
 			}
-			DiscardChanges();
+		}
+
+		public int GetBytes(long start, int count, byte[] buffer, IList<OffsetRange> changes = null) {
+			if (start + count > Size)
+				count = (int)(Size - start);
+
+			int index = 0;
+			bool first = true;
+			foreach (var dr in _dataRanges.Values) {
+				if (dr.Start > start)
+					break;
+
+				if (dr.End < start)
+					continue;
+
+				int n;
+				if (first) {
+					n = (int)Math.Min(dr.End - start + 1, count);
+					dr.GetData((int)(start - dr.Start), buffer, index, n);
+					first = false;
+				}
+				else {
+					Debug.Assert(dr.Start == start);
+					n = (int)Math.Min(count, dr.Count);
+					if (n == 0)
+						break;
+					dr.GetData(0, buffer, index, n);
+				}
+				if (changes != null && dr is ByteRange)
+					changes.Add(new OffsetRange(start, n));
+
+				index += n;
+				start += n;
+				count -= n;
+			}
+			return index;
 		}
 
 		public void Overwrite(ByteRange change) {
@@ -287,6 +193,13 @@ namespace Zodiacon.HexEditControl {
 			if (index < 0)
 				return;
 
+			if (index >= ranges.Count) {
+				// add at the end
+				_dataRanges.Add(change.Start, change);
+				_size = change.End + 1;
+				return;
+			}
+
 			dr = ranges[index];
 
 			// some non trivial intersection
@@ -300,18 +213,101 @@ namespace Zodiacon.HexEditControl {
 			if (left != null && !left.Range.IsEmpty)
 				_dataRanges.Add(left.Start, left);
 			_dataRanges.Add(change.Start, change);
+			if (change.End >= _size)
+				_size = change.End + 1;
+
 			if (right != null && !right.Range.IsEmpty)
 				_dataRanges.Add(right.Start, right);
 			if (next != null) {
 				// check next range for overlap
 				var isec2 = change.Range.GetIntersection(next.Range);
-				right = next.GetSubRange(Range.FromStartToEnd(change.End + 1, next.End));
-				_dataRanges.Remove(next.Start);
-				_dataRanges.Add(right.Start, right);
+				if (!isec2.IsEmpty) {
+					right = next.GetSubRange(Range.FromStartToEnd(change.End + 1, next.End));
+					_dataRanges.Remove(next.Start);
+					_dataRanges.Add(right.Start, right);
+				}
 			}
 		}
 
 		public void Insert(ByteRange change) {
+			// find first affected range
+			var ranges = _dataRanges.Values;
+			DataRange dr = null;
+
+			int i = 0;
+			for (; i < ranges.Count; i++) {
+				dr = ranges[i];
+				if (dr.Range.Contains(change.Start))
+					break;
+			}
+			if (i == ranges.Count) {
+				// just add the change
+				Debug.Assert(change.Start == Size);
+				_dataRanges.Add(change.Start, change);
+				_size = change.End + 1;
+			}
+			else {
+				// split current
+				var left = dr.GetSubRange(Range.FromStartToEnd(dr.Start, change.Start - 1));
+				var right = dr.GetSubRange(Range.FromStartToEnd(change.Start, dr.End));
+
+				_dataRanges.Remove(dr.Start);
+				i--;
+
+				if (left != null && !left.Range.IsEmpty)
+					_dataRanges.Add(left.Start, left);
+
+				if (right != null && !right.Range.IsEmpty) {
+					if (left == null || left.Range.IsEmpty)
+						right.Shift(change.Count);
+					_dataRanges.Add(right.Start, right);
+					i++;
+				}
+				//shift the rightmost ranges in reverse order to prevent accidental overlap
+				ranges = _dataRanges.Values;
+
+				//if (_dataRanges.ContainsKey(change.Start))
+				//	i--;
+
+					for (int j = ranges.Count - 1; j > i; --j) {
+					dr = ranges[j];
+					_dataRanges.Remove(dr.Start);
+					dr.Shift(change.Count);
+					_dataRanges.Add(dr.Start, dr);
+				}
+
+				// finally, insert the change
+				_dataRanges.Add(change.Start, change);
+				_size += change.Count;
+			}
+		}
+
+		public void UpdateChange() {
+			Debug.Assert(_currentRange != null);
+			if (_overwrite)
+				Overwrite(_currentRange);
+			else {
+				if (_currentRange.Count == 1)
+					Insert(_currentRange);
+				else
+					UpdateInsert(_currentRange);
+			}
+		}
+
+		private void UpdateInsert(ByteRange change) {
+			Debug.Assert(_dataRanges.ContainsKey(change.Start));
+
+			var i = _dataRanges.IndexOfKey(change.End);
+			if (i > -1) {
+				var ranges = _dataRanges.Values;
+				for (int j = ranges.Count - 1; j >= i; --j) {
+					var dr = ranges[j];
+					_dataRanges.Remove(dr.Start);
+					dr.Shift(1);
+					_dataRanges.Add(dr.Start, dr);
+				}
+			}
+			_size++;
 		}
 	}
 }

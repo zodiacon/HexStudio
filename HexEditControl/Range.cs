@@ -18,6 +18,10 @@ namespace Zodiacon.HexEditControl {
 			End = end;
 		}
 
+		public Range Offset(long offset) {
+			return new Range(Start + offset, End + offset);
+		}
+
 		public static Range FromStartToEnd(long start, long end) {
 			return new Range(start, end);
 		}

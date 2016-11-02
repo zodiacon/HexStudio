@@ -149,7 +149,7 @@ namespace Zodiacon.HexEditControl {
 
 			List<OffsetRange> changes = new List<OffsetRange>();
 
-			var read = _hexBuffer.GetBytes(start, readSize, _readBuffer, 0, changes);
+			var read = _hexBuffer.GetBytes(start, readSize, _readBuffer, changes);
 			if (start + read < end)
 				end = start + read;
 
@@ -381,7 +381,7 @@ namespace Zodiacon.HexEditControl {
 
 		int _inputIndex = 0, _wordIndex = 0;
 		byte _lastValue = 0;
-		EditChange _currentChange;
+		ByteRange _currentChange;
 
 		private void HandleTextEdit(KeyEventArgs e) {
 			if (IsReadOnly) return;
@@ -404,16 +404,16 @@ namespace Zodiacon.HexEditControl {
 				if (CaretOffset == _hexBuffer.Size)
 					overwrite = false;
 
-				_currentChange = new EditChange(CaretOffset) { Overwrite = OverwriteMode };
-				_hexBuffer.AddChange(_currentChange);
+				_currentChange = new ByteRange(CaretOffset);
+				_hexBuffer.AddChange(_currentChange, OverwriteMode);
 			}
 
 			if (_inputIndex == 0) {
-				_currentChange.Data.Add(_lastValue);
-				_hexBuffer.UpdateLastChange();
+				_currentChange.AddData(_lastValue);
+				_hexBuffer.UpdateChange();
 			}
 			else {
-				_currentChange.Data[_currentChange.Size - 1] = _lastValue;
+				_currentChange.SetData((int)_currentChange.Count - 1, _lastValue);
 			}
 			if (++_inputIndex == 2) {
 				_inputIndex = 0;
