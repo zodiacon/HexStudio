@@ -3,13 +3,17 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zodiacon.HexEditControl;
 using Zodiacon.HexEditControl.Operations;
 using System.Diagnostics;
+using System.IO;
 
 namespace HexEditControl.Tests {
 	[TestClass]
 	public class DataRangeTests {
 		[TestMethod]
 		public void TestBasicOperations() {
-			var buffer = new ByteBuffer(@"c:\\temp\\data.txt");
+			var bytes = Helpers.CreateByteArray(100);
+			var filename = Path.GetTempFileName();
+			File.WriteAllBytes(filename, bytes);
+			var buffer = new ByteBuffer(filename);
 			var size = buffer.Size;
 
 			var dr1 = new ByteRange(20, new byte[] { 65, 66, 67, 68 });

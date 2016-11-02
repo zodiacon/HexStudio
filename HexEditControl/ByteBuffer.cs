@@ -17,7 +17,7 @@ namespace Zodiacon.HexEditControl {
 		readonly List<EditChange> _changes = new List<EditChange>();
 		byte[] _byteBuffer;
 		string _filename;
-		BinarySearchTree<OffsetAndHeight, DataRange> _dataRanges = new BinarySearchTree<OffsetAndHeight, DataRange>();
+		SortedList<long, DataRange> _dataRanges = new SortedList<long, DataRange>(32);
 
 		public ByteBuffer(string filename) {
 			Open(filename);
@@ -28,7 +28,7 @@ namespace Zodiacon.HexEditControl {
 			_size = new FileInfo(filename).Length;
 			_memFile = MemoryMappedFile.CreateFromFile(filename);
 			_accessor = _memFile.CreateViewAccessor();
-			_dataRanges.Add(new OffsetAndHeight(0, 0), new FileRange(Range.FromStartAndCount(0, Size), 0, _accessor));
+			_dataRanges.Add(0, new FileRange(Range.FromStartAndCount(0, Size), 0, _accessor));
 		}
 
 		public ByteBuffer(long size, long limit) {
@@ -203,7 +203,7 @@ namespace Zodiacon.HexEditControl {
 		}
 
 		public static int MoveBufferSize { get; set; } = 1 << 21;
-		public IEnumerable<DataRange> DataRanges => _dataRanges.GetAllNodes().Select(item => item.Value);
+		public IEnumerable<DataRange> DataRanges => _dataRanges.Select(item => item.Value);
 
 		static byte[] _moveBuffer;
 		private void MoveBuffer(long offset, int size) {
@@ -226,7 +226,7 @@ namespace Zodiacon.HexEditControl {
 			_currentChange = null;
 			_lastChangeIndex = -1;
 			_size = new FileInfo(_filename).Length;
-			_dataRanges = new BinarySearchTree<OffsetAndHeight, DataRange>();
+			_dataRanges.Clear();
 		}
 
 		public void Dispose() {
@@ -260,8 +260,55 @@ namespace Zodiacon.HexEditControl {
 		}
 
 		public void Overwrite(ByteRange change) {
-			change.Height = _dataRanges.Count;
-			_dataRanges.Add(new OffsetAndHeight(change.Start, change.Height), change);
+			var ranges = _dataRanges.Values;
+			int index = -1;
+			DataRange dr;
+
+			for (int i = 0; i < ranges.Count; i++) {
+				dr = ranges[i];
+
+				// are we off the grid?
+				if (change.End < dr.Start)
+					break;
+
+				// skip ranges eariler than the change
+				if (change.Start > dr.End)
+					continue;
+
+				if (index < 0)
+					index = i;
+				if (change.Range.ContainsEntirely(dr.Range)) {
+					// range can be removed
+					_dataRanges.RemoveAt(i);
+					i--;
+					continue;
+				}
+			}
+			if (index < 0)
+				return;
+
+			dr = ranges[index];
+
+			// some non trivial intersection
+			var isec = change.Range.GetIntersection(dr.Range);
+			var left = dr.GetSubRange(Range.FromStartToEnd(dr.Start, change.Start - 1));
+			var right = dr.GetSubRange(Range.FromStartToEnd(change.End + 1, dr.End));
+
+			var next = index < ranges.Count - 1 ? ranges[index + 1] : null;
+
+			_dataRanges.RemoveAt(index);
+			if (left != null && !left.Range.IsEmpty)
+				_dataRanges.Add(left.Start, left);
+			_dataRanges.Add(change.Start, change);
+			if (right != null && !right.Range.IsEmpty)
+				_dataRanges.Add(right.Start, right);
+			if (next != null) {
+				// check next range for overlap
+				var isec2 = change.Range.GetIntersection(next.Range);
+				right = next.GetSubRange(Range.FromStartToEnd(change.End + 1, next.End));
+				_dataRanges.Remove(next.Start);
+				_dataRanges.Add(right.Start, right);
+			}
 		}
 
 		public void Insert(ByteRange change) {

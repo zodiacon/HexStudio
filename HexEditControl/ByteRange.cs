@@ -15,7 +15,11 @@ namespace Zodiacon.HexEditControl {
 		}
 
 		public override DataRange GetSubRange(Range range) {
-			return new ByteRange(range.Start, Data.Skip((int)(range.Start - Range.Start)).Take((int)Range.Count).ToArray());
+			var isec = range.GetIntersection(Range);
+			if (isec.IsEmpty)
+				return null;
+
+			return new ByteRange(range.Start, Data.Skip((int)(isec.Start - Range.Start)).Take((int)isec.Count).ToArray());
 		}
 
 		public override void GetData(byte[] bytes, int index, int count) {
@@ -23,7 +27,7 @@ namespace Zodiacon.HexEditControl {
 		}
 
 		public override string ToString() {
-			return $"{{{Range}}} ({Count}) (Byte) H={Height}";
+			return $"{{{Range}}} ({Count}) (Byte)";
 		}
 	}
 }

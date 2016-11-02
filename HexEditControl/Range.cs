@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Zodiacon.HexEditControl {
 	public struct Range : IEquatable<Range> {
-		public bool IsEmpty => Count == 0;
+		public bool IsEmpty => Start > End;
 
 		public long Start { get; }
 		public long End { get; }
@@ -19,8 +19,6 @@ namespace Zodiacon.HexEditControl {
 		}
 
 		public static Range FromStartToEnd(long start, long end) {
-			if (start >= end)
-				return new Range();
 			return new Range(start, end);
 		}
 

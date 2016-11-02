@@ -12,7 +12,6 @@ namespace Zodiacon.HexEditControl {
 		public long Start => Range.Start;
 		public long End => Range.End;
 		public long Count => Range.Count;
-		public int Height { get; set; }
 
 		public abstract void GetData(byte[] bytes, int index, int count);
 		public abstract DataRange GetSubRange(Range range);

@@ -31,7 +31,7 @@ namespace Zodiacon.HexEditControl {
 		}
 
 		public override string ToString() {
-			return $"{{{Range}}} ({Count}) (File offset={FileOffset}) H={Height}";
+			return $"{{{Range}}} ({Count}) (File offset={FileOffset})";
 		}
 	}
 }

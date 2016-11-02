@@ -69,7 +69,6 @@
       <DependentUpon>HexEdit.xaml</DependentUpon>
     </Compile>
     <Compile Include="DataRange.cs" />
-    <Compile Include="OffsetAndHeight.cs" />
     <Compile Include="OffsetRange.cs" />
     <Compile Include="Operations\InsertDataOperation.cs" />
     <Compile Include="Operations\OverwriteDataOperation.cs" />
