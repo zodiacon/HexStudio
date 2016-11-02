@@ -391,11 +391,13 @@ namespace Zodiacon.HexEditControl {
 			_currentChange = null;
 			_inputIndex = _wordIndex = 0;
 			_lastValue = 0;
+			_fullValue = 0;
 			CaretOffset -= CaretOffset % WordSize;
 		}
 
 		int _inputIndex = 0, _wordIndex = 0;
 		byte _lastValue = 0;
+		ulong _fullValue;
 		ByteRange _currentChange;
 
 		private void HandleTextEdit(KeyEventArgs e) {
@@ -432,6 +434,9 @@ namespace Zodiacon.HexEditControl {
 			}
 			if (++_inputIndex == 2) {
 				_inputIndex = 0;
+				if (_wordIndex % 2 == 1)
+					_currentChange.SwapLastBytes(_wordIndex + 1);
+
 				if (++_wordIndex == WordSize) {
 					CaretOffset += WordSize;
 					_wordIndex = 0;

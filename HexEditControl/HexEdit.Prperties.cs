@@ -14,7 +14,7 @@ namespace Zodiacon.HexEditControl {
 
 		public static readonly DependencyProperty OverwriteModeProperty =
 			 DependencyProperty.Register(nameof(OverwriteMode), typeof(bool), typeof(HexEdit), 
-				 new PropertyMetadata(false, (s, e) => ((HexEdit)s).OnOverwriteModeChanged(e)));
+				 new PropertyMetadata(true, (s, e) => ((HexEdit)s).OnOverwriteModeChanged(e)));
 
 		private void OnOverwriteModeChanged(DependencyPropertyChangedEventArgs e) {
 			ClearChange();
@@ -24,6 +24,8 @@ namespace Zodiacon.HexEditControl {
 		void UpdateCaretWidth() {
 			_caret.Width = OverwriteMode ? _charWidth : SystemParameters.CaretWidth;
 		}
+
+		public long SelectionLength => SelectionStart < 0 ? 0 : SelectionEnd - SelectionStart + 1;
 
 		public Brush EditForeground {
 			get { return (Brush)GetValue(EditForegroundProperty); }

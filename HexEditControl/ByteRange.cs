@@ -31,7 +31,8 @@ namespace Zodiacon.HexEditControl {
 		}
 
 		public override DataRange GetSubRange(Range range) {
-			Debug.Assert(!range.IsEmpty);
+			if (range.IsEmpty)
+				return EmptyDataRange.Instance;
 
 			var isec = range.GetIntersection(Range);
 			if (isec.IsEmpty)
@@ -54,6 +55,37 @@ namespace Zodiacon.HexEditControl {
 
 		public override void WriteData(long position, MemoryMappedViewAccessor accessor) {
 			accessor.WriteArray(Start, Data, 0, (int)Count);
+		}
+
+		public void SwapLastBytes(int n) {
+			switch (n) {
+				case 8:
+					SwapBytes();
+					SwapWords();
+					ulong value = ((ulong)BitConverter.ToUInt32(Data, (int)Count - 8) << 32) | BitConverter.ToUInt32(Data, (int)Count - 4);
+					Array.Copy(BitConverter.GetBytes(value), 0, Data, Count - 8, 8);
+					break;
+
+				case 4:
+					SwapBytes();
+					SwapWords();
+					break;
+
+				case 2:
+					SwapBytes();
+					break;
+			}
+		}
+
+		private void SwapWords() {
+			uint value = ((uint)BitConverter.ToUInt16(Data, (int)Count - 4) << 16) | BitConverter.ToUInt16(Data, (int)Count - 2);
+			Array.Copy(BitConverter.GetBytes(value), 0, Data, Count - 4, 4);
+		}
+
+		private void SwapBytes() {
+			var temp = Data[Count - 1];
+			Data[Count - 1] = Data[Count - 2];
+			Data[Count - 2] = temp;
 		}
 	}
 }
