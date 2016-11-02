@@ -4,10 +4,6 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Zodiacon.HexEditControl.DataStructures;
-using Zodiacon.WPF;
 
 namespace Zodiacon.HexEditControl {
 	public class ByteBuffer : IDisposable {
@@ -80,13 +76,14 @@ namespace Zodiacon.HexEditControl {
 			_memFile = MemoryMappedFile.CreateFromFile(_filename, FileMode.Open, null, Size);
 			_accessor = _memFile.CreateViewAccessor();
 
-			foreach (var dr in _dataRanges.Values) {
+			foreach (var dr in _dataRanges.Values.OfType<FileRange>()) {
+				dr.WriteData(dr.Start, _accessor);
+			}
+			foreach (var dr in _dataRanges.Values.OfType<ByteRange>()) {
 				dr.WriteData(dr.Start, _accessor);
 			}
 
 			DiscardChanges();
-			_dataRanges.Clear();
-			_dataRanges.Add(0, new FileRange(Range.FromStartAndCount(0, Size), 0, _accessor));
 		}
 
 		public static int MoveBufferSize { get; set; } = 1 << 21;
@@ -269,7 +266,7 @@ namespace Zodiacon.HexEditControl {
 				//if (_dataRanges.ContainsKey(change.Start))
 				//	i--;
 
-					for (int j = ranges.Count - 1; j > i; --j) {
+				for (int j = ranges.Count - 1; j > i; --j) {
 					dr = ranges[j];
 					_dataRanges.Remove(dr.Start);
 					dr.Shift(change.Count);

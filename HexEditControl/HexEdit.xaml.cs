@@ -497,12 +497,14 @@ namespace Zodiacon.HexEditControl {
 
 		public void SaveChanges() {
 			_hexBuffer.ApplyChanges();
+			ClearChange();
 			IsModified = false;
 			InvalidateVisual();
 		}
 
 		public void SaveChangesAs(string newfilename) {
 			_hexBuffer.SaveToFile(newfilename);
+			ClearChange();
 			IsModified = false;
 			InvalidateVisual();
 		}

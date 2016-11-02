@@ -59,8 +59,6 @@
   <ItemGroup>
     <Compile Include="ByteBuffer.cs" />
     <Compile Include="ByteRange.cs" />
-    <Compile Include="DataStructures\BinarySearchTree.cs" />
-    <Compile Include="DataStructures\Node.cs" />
     <Compile Include="IEditOperation.cs" />
     <Compile Include="FileRange.cs" />
     <Compile Include="HexEdit.Prperties.cs" />
