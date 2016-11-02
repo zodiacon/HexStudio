@@ -9,6 +9,10 @@
              xmlns:root="clr-namespace:HexStudio"
              mc:Ignorable="d" x:Name="This"
              d:DesignHeight="300" d:DesignWidth="300">
+    <UserControl.InputBindings>
+        <KeyBinding Key="S" Modifiers="Ctrl" Command="{Binding SelectedFile.SaveFileCommand, FallbackValue={x:Static vm:MainViewModel.EmptyCommand}}" />
+        <!--<KeyBinding Key="S" Modifiers="Ctrl" Command="{Binding SelectedFile.SaveFileCommand, FallbackValue={x:Static vm:MainViewModel.EmptyCommand}}" />-->
+    </UserControl.InputBindings>
     <UserControl.Resources>
         <DataTemplate x:Key="FileViewKey" >
             <local:OpenFileView />

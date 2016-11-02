@@ -81,6 +81,8 @@ namespace HexStudio.ViewModels {
 			OpenFileInternal(filename);
 		});
 
+		public ICommand SaveFileCommand => new DelegateCommand<OpenFileViewModel>(file => file.SaveFile()).ObservesProperty(() => SelectedFile);
+
 		public void CloseFile(OpenFileViewModel file) {
 			int index = OpenFiles.IndexOf(file);
 			Debug.Assert(index >= 0);

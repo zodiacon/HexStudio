@@ -13,7 +13,7 @@ namespace Zodiacon.HexEditControl {
 		}
 
 		public static readonly DependencyProperty OverwriteModeProperty =
-			 DependencyProperty.Register(nameof(OverwriteMode), typeof(bool), typeof(HexEdit), 
+			 DependencyProperty.Register(nameof(OverwriteMode), typeof(bool), typeof(HexEdit),
 				 new PropertyMetadata(true, (s, e) => ((HexEdit)s).OnOverwriteModeChanged(e)));
 
 		private void OnOverwriteModeChanged(DependencyPropertyChangedEventArgs e) {
@@ -33,7 +33,7 @@ namespace Zodiacon.HexEditControl {
 		}
 
 		public static readonly DependencyProperty EditForegroundProperty =
-			 DependencyProperty.Register(nameof(EditForeground), typeof(Brush), typeof(HexEdit), 
+			 DependencyProperty.Register(nameof(EditForeground), typeof(Brush), typeof(HexEdit),
 				 new FrameworkPropertyMetadata(Brushes.Red, FrameworkPropertyMetadataOptions.AffectsRender));
 
 		public long CaretOffset {
@@ -115,7 +115,7 @@ namespace Zodiacon.HexEditControl {
 		}
 
 		public static readonly DependencyProperty WordSizeProperty =
-			 DependencyProperty.Register("WordSize", typeof(int), typeof(HexEdit), new PropertyMetadata(1, 
+			 DependencyProperty.Register("WordSize", typeof(int), typeof(HexEdit), new PropertyMetadata(1,
 				 (s, e) => ((HexEdit)s).Refresh()), ValidateWordSize);
 
 		public Brush SelectionBackground {
@@ -160,7 +160,13 @@ namespace Zodiacon.HexEditControl {
 		}
 
 		private void ExecutePaste(ExecutedRoutedEventArgs e) {
-			throw new NotImplementedException();
+			var bytes = (byte[])Clipboard.GetData(DataFormats.Serializable);
+			var br = new ByteRange(CaretOffset, bytes);
+			if (OverwriteMode)
+				_hexBuffer.Overwrite(br);
+			else
+				_hexBuffer.Insert(br);
+			InvalidateVisual();
 		}
 
 		private void CanExecutePaste(CanExecuteRoutedEventArgs e) {
@@ -168,21 +174,17 @@ namespace Zodiacon.HexEditControl {
 		}
 
 		private void CanExecuteCopy(CanExecuteRoutedEventArgs e) {
-			e.CanExecute = SelectionStart >= 0 && SelectionEnd - SelectionStart > 0;
+			e.CanExecute = SelectionLength > 0 && SelectionLength < 1 << 30;
 		}
 
 		private void ExecuteCopy(ExecutedRoutedEventArgs e) {
 			try {
-				var count = SelectionEnd - SelectionStart + 1;
-				if (count > 1L << 31 - 1) {
-					// too large, raise event
-				}
-				else {
-					var bytes = new byte[count];
-					_hexBuffer.GetBytes(SelectionStart, (int)count, bytes);
-					Clipboard.SetData(DataFormats.Serializable, bytes);
-					Clipboard.SetText(FormatBytes(bytes, WordSize));
-				}
+				var count = SelectionLength;
+				var bytes = new byte[count];
+				_hexBuffer.GetBytes(SelectionStart, (int)count, bytes);
+				var data = new DataObject(DataFormats.Serializable, bytes);
+				data.SetText(FormatBytes(bytes, WordSize));
+				Clipboard.SetDataObject(data, true);
 			}
 			catch (OutOfMemoryException) {
 
@@ -191,7 +193,7 @@ namespace Zodiacon.HexEditControl {
 
 		private string FormatBytes(byte[] bytes, int wordSize) {
 			var sb = new StringBuilder((wordSize + 1) * bytes.Length);
-			for(int i = 0; i < bytes.Length; i += wordSize)
+			for (int i = 0; i < bytes.Length; i += wordSize)
 				sb.Append(_bitConverters[_bitConverterIndex[wordSize]](bytes, i)).Append(" ");
 			return sb.ToString();
 		}

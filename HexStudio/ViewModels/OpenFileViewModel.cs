@@ -89,6 +89,10 @@ namespace HexStudio.ViewModels {
 
 		private bool _isModified;
 
+		public void SaveFile() {
+			SaveInternal();
+		}
+
 		public bool IsModified {
 			get { return _isModified; }
 			set {
