@@ -26,9 +26,8 @@ namespace Zodiacon.HexEditControl {
 		ByteBuffer _hexBuffer;
 		readonly Dictionary<long, Point> _offsetsPositions = new Dictionary<long, Point>(128);
 		readonly Dictionary<int, long> _verticalPositions = new Dictionary<int, long>(128);
-		readonly AppCommandManager _commandManager = new AppCommandManager();
 
-		//long _totalLines;
+		public ByteBuffer Buffer => _hexBuffer;
 
 		public HexEdit() {
 			InitializeComponent();
@@ -47,14 +46,8 @@ namespace Zodiacon.HexEditControl {
 		}
 
 		static HexEdit() {
-			CommandManager.RegisterClassCommandBinding(typeof(HexEdit), new CommandBinding(ApplicationCommands.SelectAll,
-				(s, e) => ((HexEdit)s).ExecuteSelectAll(e)));
-			CommandManager.RegisterClassCommandBinding(typeof(HexEdit), new CommandBinding(ApplicationCommands.Copy,
-				(s, e) => ((HexEdit)s).ExecuteCopy(e), (s, e) => ((HexEdit)s).CanExecuteCopy(e)));
-			CommandManager.RegisterClassCommandBinding(typeof(HexEdit), new CommandBinding(ApplicationCommands.Paste,
-				(s, e) => ((HexEdit)s).ExecutePaste(e), (s, e) => ((HexEdit)s).CanExecutePaste(e)));
+			RegisterCommands();
 		}
-
 
 		private void _timer_Tick(object sender, EventArgs e) {
 			if (CaretOffset < 0 && _hexBuffer.Size > 0)
@@ -282,7 +275,7 @@ namespace Zodiacon.HexEditControl {
 			var xp = pt.X - _hexDataXPos;
 			long offset = -1;
 			var y = (int)pt.Y;
-			while (!_verticalPositions.TryGetValue(y, out offset) && y > -10)
+			while (!_verticalPositions.TryGetValue(y, out offset) && y > -5)
 				y--;
 			if (offset < 0)
 				return offset;
@@ -316,6 +309,10 @@ namespace Zodiacon.HexEditControl {
 				var offset = CaretOffset;
 
 				switch (e.Key) {
+					case Key.Insert:
+						OverwriteMode = !OverwriteMode;
+						break;
+
 					case Key.Down:
 						CaretOffset += BytesPerLine;
 						break;
@@ -350,16 +347,23 @@ namespace Zodiacon.HexEditControl {
 							CaretOffset -= BytesPerLine * _viewLines;
 						break;
 
-					case Key.Back:
+					case Key.Back:				
 						if (CaretOffset < WordSize)
 							break;
 						CaretOffset -= WordSize;
 						goto case Key.Delete;
 
 					case Key.Delete:
-						// delete
 						ClearChange();
-						_hexBuffer.Delete(Range.FromStartAndCount(CaretOffset, WordSize));
+
+						if (SelectionLength > 0) {
+							// delete selection
+							_hexBuffer.Delete(Range.FromStartToEnd(SelectionStart, SelectionEnd));
+						}
+						else {
+							// delete
+							_hexBuffer.Delete(Range.FromStartAndCount(CaretOffset, WordSize));
+						}
 						if (!IsModified)
 							IsModified = true;
 						InvalidateVisual();
@@ -461,25 +465,26 @@ namespace Zodiacon.HexEditControl {
 
 		bool _mouseLeftButtonDown;
 		private void _scroll_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) {
-			var pt = e.GetPosition(this);
+			var pt = e.GetPosition(_root);
 			CaretOffset = GetOffsetByCursorPosition(pt);
 			_root.Focus();
 			_root.CaptureMouse();
 			_currentChange = null;
 			_mouseLeftButtonDown = true;
+			ClearSelection();
 		}
 
 		private void Grid_MouseMove(object sender, MouseEventArgs e) {
 			// change cursor 
-			var pt = e.GetPosition(this);
-			if (pt.X >= _hexDataXPos && pt.X < _hexDataXPos + _hexDataWidth) {
+			var pt = e.GetPosition(_root);
+			if (pt.X >= _hexDataXPos - 2 && pt.X < _hexDataXPos + _hexDataWidth) {
 				Cursor = Cursors.IBeam;
 				if (_mouseLeftButtonDown) {
 					var offset = CaretOffset;
 					CaretOffset = GetOffsetByCursorPosition(pt);
 					if (offset != CaretOffset && !_selecting) {
 						_selecting = true;
-						SelectionStart = SelectionEnd = CaretOffset;
+						SelectionStart = SelectionEnd = offset;
 					}
 					else if (_selecting) {
 						UpdateSelection(CaretOffset >= offset);
@@ -518,6 +523,13 @@ namespace Zodiacon.HexEditControl {
 			ClearChange();
 			IsModified = false;
 			InvalidateVisual();
+		}
+
+		private void _root_MouseRightButtonDown(object sender, MouseButtonEventArgs e) {
+			var pt = e.GetPosition(this);
+			CaretOffset = GetOffsetByCursorPosition(pt);
+			_root.Focus();
+			_currentChange = null;
 		}
 
 		public void SaveChangesAs(string newfilename) {

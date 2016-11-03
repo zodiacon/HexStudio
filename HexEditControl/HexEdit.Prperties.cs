@@ -25,7 +25,7 @@ namespace Zodiacon.HexEditControl {
 			_caret.Width = OverwriteMode ? _charWidth : SystemParameters.CaretWidth;
 		}
 
-		public long SelectionLength => SelectionStart < 0 ? 0 : SelectionEnd - SelectionStart + 1;
+		public long SelectionLength => SelectionStart < 0 ? 0 : SelectionEnd - SelectionStart + WordSize;
 
 		public Brush EditForeground {
 			get { return (Brush)GetValue(EditForegroundProperty); }
@@ -107,7 +107,7 @@ namespace Zodiacon.HexEditControl {
 		}
 
 		public static readonly DependencyProperty VerticalSpaceProperty =
-			 DependencyProperty.Register("VerticalSpace", typeof(double), typeof(HexEdit), new PropertyMetadata(2.0, (s, e) => ((HexEdit)s).Refresh()));
+			 DependencyProperty.Register(nameof(VerticalSpace), typeof(double), typeof(HexEdit), new PropertyMetadata(2.0, (s, e) => ((HexEdit)s).Refresh()));
 
 		public int WordSize {
 			get { return (int)GetValue(WordSizeProperty); }
@@ -115,7 +115,7 @@ namespace Zodiacon.HexEditControl {
 		}
 
 		public static readonly DependencyProperty WordSizeProperty =
-			 DependencyProperty.Register("WordSize", typeof(int), typeof(HexEdit), new PropertyMetadata(1,
+			 DependencyProperty.Register(nameof(WordSize), typeof(int), typeof(HexEdit), new PropertyMetadata(1,
 				 (s, e) => ((HexEdit)s).Refresh()), ValidateWordSize);
 
 		public Brush SelectionBackground {
@@ -157,38 +157,6 @@ namespace Zodiacon.HexEditControl {
 		private static bool ValidateWordSize(object value) {
 			var wordSize = (int)value;
 			return wordSize == 1 || wordSize == 2 || wordSize == 4 || wordSize == 8;
-		}
-
-		private void ExecutePaste(ExecutedRoutedEventArgs e) {
-			var bytes = (byte[])Clipboard.GetData(DataFormats.Serializable);
-			var br = new ByteRange(CaretOffset, bytes);
-			if (OverwriteMode)
-				_hexBuffer.Overwrite(br);
-			else
-				_hexBuffer.Insert(br);
-			InvalidateVisual();
-		}
-
-		private void CanExecutePaste(CanExecuteRoutedEventArgs e) {
-			e.CanExecute = Clipboard.ContainsData(DataFormats.Serializable);
-		}
-
-		private void CanExecuteCopy(CanExecuteRoutedEventArgs e) {
-			e.CanExecute = SelectionLength > 0 && SelectionLength < 1 << 30;
-		}
-
-		private void ExecuteCopy(ExecutedRoutedEventArgs e) {
-			try {
-				var count = SelectionLength;
-				var bytes = new byte[count];
-				_hexBuffer.GetBytes(SelectionStart, (int)count, bytes);
-				var data = new DataObject(DataFormats.Serializable, bytes);
-				data.SetText(FormatBytes(bytes, WordSize));
-				Clipboard.SetDataObject(data, true);
-			}
-			catch (OutOfMemoryException) {
-
-			}
 		}
 
 		private string FormatBytes(byte[] bytes, int wordSize) {

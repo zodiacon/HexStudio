@@ -28,15 +28,19 @@ namespace HexStudio.ViewModels {
 
 			CloseCommand = new DelegateCommand(() => {
 				if (IsModified) {
-					var reply = _mainViewModel.MessageBoxService.ShowMessage("File modified. Save before close?",
-						Constants.AppTitle, MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+					MessageBoxResult reply = QuerySaveFile();
 					if (reply == MessageBoxResult.Cancel)
 						return;
 					if (reply == MessageBoxResult.Yes)
-						_editor.SaveChanges();
+						SaveInternal();
 				}
 				_mainViewModel.CloseFile(this);
 			});
+		}
+
+		private MessageBoxResult QuerySaveFile() {
+			return _mainViewModel.MessageBoxService.ShowMessage("File modified. Save before close?",
+				Constants.AppTitle, MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
 		}
 
 		public void OpenFile(string filename) {
@@ -78,6 +82,15 @@ namespace HexStudio.ViewModels {
 		public bool IsReadOnly {
 			get { return _isReadOnly; }
 			set { SetProperty(ref _isReadOnly, value); }
+		}
+
+		public bool QueryCloseFile() {
+			var reply = QuerySaveFile();
+			if(reply == MessageBoxResult.Yes) {
+				SaveInternal();
+				return true;
+			}
+			return reply == MessageBoxResult.No;
 		}
 
 		private int _wordSize = 1;
@@ -156,7 +169,7 @@ namespace HexStudio.ViewModels {
 			}
 		}
 
-		private bool _overwriteMode = false;
+		private bool _overwriteMode;
 
 		public bool OverwriteMode {
 			get { return _overwriteMode; }

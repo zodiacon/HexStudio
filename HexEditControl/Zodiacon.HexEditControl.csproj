@@ -59,6 +59,9 @@
   <ItemGroup>
     <Compile Include="ByteBuffer.cs" />
     <Compile Include="ByteRange.cs" />
+    <Compile Include="Commands\AddBulkTextCommand.cs" />
+    <Compile Include="Commands\AddTextCommand.cs" />
+    <Compile Include="Commands\HexEditCommandBase.cs" />
     <Compile Include="IEditOperation.cs" />
     <Compile Include="FileRange.cs" />
     <Compile Include="HexEdit.Prperties.cs" />
@@ -67,8 +70,6 @@
     </Compile>
     <Compile Include="DataRange.cs" />
     <Compile Include="OffsetRange.cs" />
-    <Compile Include="Operations\InsertDataOperation.cs" />
-    <Compile Include="Operations\OverwriteDataOperation.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -89,6 +90,7 @@
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
     <None Include="app.config" />
+    <Compile Include="HexEdit.Commands.cs" />
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>

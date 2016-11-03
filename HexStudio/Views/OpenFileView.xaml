@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:HexStudio.Views"
+             xmlns:z="http://zodiacon.wpf/2016"
              xmlns:metro="http://metro.mahapps.com/winfx/xaml/controls"
              xmlns:c="clr-namespace:Zodiacon.HexEditControl;assembly=HexEditControl"
              mc:Ignorable="d" 
@@ -35,10 +36,19 @@
             <RadioButton Content="8" IsChecked="{Binding Is8Byte}" GroupName="Chunk" />
             
         </StackPanel>
-        
+
         <c:HexEdit x:Name="_hexEdit" Margin="2" Grid.Row="1" IsReadOnly="{Binding IsReadOnly}" FontSize="{Binding Settings.FontSize}"
                    Foreground="{Binding Settings.TextForeground, Converter={StaticResource colorToBrushConverter}}"
                    WordSize="{Binding WordSize}" IsModified="{Binding IsModified, Mode=OneWayToSource}" OverwriteMode="{Binding OverwriteMode, Mode=TwoWay}"
-                   />
+                   >
+            <c:HexEdit.ContextMenu>
+                <ContextMenu>
+                    <MenuItem Header="Copy" Command="Copy" Icon="{z:Image /icons/copy.ico, Width=20, Height=20}"/>
+                    <MenuItem Header="Cut" Command="Cut" Icon="{z:Image /icons/cut.ico, Width=20, Height=20}"/>
+                    <MenuItem Header="Paste" Command="Paste" Icon="{z:Image /icons/paste.ico, Width=20, Height=20}"/>
+                    <MenuItem Header="Delete" Command="Delete" Icon="{z:Image /icons/delete.ico, Width=20, Height=20}"/>
+                </ContextMenu>
+            </c:HexEdit.ContextMenu>
+        </c:HexEdit>
     </Grid>
 </UserControl>

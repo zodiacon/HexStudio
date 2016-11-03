@@ -289,22 +289,24 @@ namespace Zodiacon.HexEditControl {
 		public void Delete(Range range) {
 			// look for entire ranges to remove
 
-			var ranges = _dataRanges.Values;
-			for (int i = ranges.Count - 1; i >= 0; --i) {
-				var dr = ranges[i];
-				if (dr.Range == range) {
-					// dr can be removed
-					_dataRanges.RemoveAt(i);
-					for (int j = _dataRanges.Count - 1; j >= i; --j) {
-						var dr1 = _dataRanges.Values[j];
-						dr1.Shift(-range.Count);
-						_dataRanges.RemoveAt(j);
-						_dataRanges.Add(dr1.Start, dr1);
-					}
-					_size -= range.Count;
-					break;
+			int i;
+			DataRange exactRange;
+			if ((i = _dataRanges.IndexOfKey(range.Start)) >= 0 && (exactRange = _dataRanges.Values[i]).Count == range.Count) {
+				_dataRanges.RemoveAt(i);
+				for (int j = _dataRanges.Count - 1; j >= i; --j) {
+					var dr1 = _dataRanges.Values[j];
+					dr1.Shift(-range.Count);
+					_dataRanges.RemoveAt(j);
+					_dataRanges.Add(dr1.Start, dr1);
 				}
-				else if (dr.Range.ContainsEntirely(range)) {
+				_size -= range.Count;
+				return;
+			}
+
+			var ranges = _dataRanges.Values;
+			for (i = ranges.Count - 1; i >= 0; --i) {
+				var dr = ranges[i];
+				if (dr.Range.ContainsEntirely(range)) {
 					// split dr into two ranges
 					var left = dr.GetSubRange(Range.FromStartToEnd(dr.Start, range.Start - 1));
 					var right = dr.GetSubRange(Range.FromStartToEnd(range.End + 1, dr.End));
@@ -329,9 +331,9 @@ namespace Zodiacon.HexEditControl {
 					_size -= range.Count;
 					break;
 				}
-				else {
+				if (dr.Range.Intersects(range)) {
 					// complex overlap
-					int zz = 9;
+					break;
 				}
 			}
 		}

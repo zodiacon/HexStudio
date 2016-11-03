@@ -4,14 +4,15 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:HexStudio.Views"
+             xmlns:metro="http://metro.mahapps.com/winfx/xaml/controls"
              xmlns:vm="clr-namespace:HexStudio.ViewModels"
              xmlns:z="http://zodiacon.wpf/2016"
              xmlns:root="clr-namespace:HexStudio"
              mc:Ignorable="d" x:Name="This"
              d:DesignHeight="300" d:DesignWidth="300">
     <UserControl.InputBindings>
-        <KeyBinding Key="S" Modifiers="Ctrl" Command="{Binding SelectedFile.SaveFileCommand, FallbackValue={x:Static vm:MainViewModel.EmptyCommand}}" />
-        <!--<KeyBinding Key="S" Modifiers="Ctrl" Command="{Binding SelectedFile.SaveFileCommand, FallbackValue={x:Static vm:MainViewModel.EmptyCommand}}" />-->
+        <KeyBinding Gesture="Ctrl+S" Command="{Binding SelectedFile.SaveFileCommand, FallbackValue={x:Static vm:MainViewModel.EmptyCommand}}" />
+        <KeyBinding Key="F4" Modifiers="Ctrl" Command="{Binding SelectedFile.CloseCommand, FallbackValue={x:Static vm:MainViewModel.EmptyCommand}}" />
     </UserControl.InputBindings>
     <UserControl.Resources>
         <DataTemplate x:Key="FileViewKey" >
@@ -73,22 +74,23 @@
             
         </StackPanel>
         <TabControl Grid.Row="2" ItemsSource="{Binding OpenFiles}" SelectedItem="{Binding SelectedFile, Mode=TwoWay}" 
-                    root:TabControlProperties.IsCached="True" root:TabControlProperties.Template="{StaticResource FileViewKey}">
+                    root:TabControlProperties.IsCached="True" root:TabControlProperties.Template="{StaticResource FileViewKey}" 
+                                                >
             <TabControl.ItemContainerStyle>
-                <Style TargetType="TabItem">
+                <Style TargetType="TabItem" >
                     <Setter Property="MinWidth" Value="60" />
-                    <Setter Property="MaxWidth" Value="300" />
+                    <Setter Property="MaxWidth" Value="320" />
                     <Setter Property="HeaderTemplate">
                         <Setter.Value>
                             <DataTemplate>
-                                <StackPanel Orientation="Horizontal">
-                                    <Image Source="/icons/file.ico" Width="20" Height="20"/>
-                                    <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Margin="4,0,0,0" />
-                                    <Button Margin="8,0,0,0" BorderThickness="0" Background="Transparent" 
+                                <DockPanel MaxWidth="300" HorizontalAlignment="Left" LastChildFill="False">
+                                    <Image Source="/icons/file.ico" Width="20" Height="20" DockPanel.Dock="Left"/>
+                                    <TextBlock DockPanel.Dock="Left" Text="{Binding Title}" TextTrimming="CharacterEllipsis"  VerticalAlignment="Center" Margin="4,0,0,0" />
+                                    <Button Margin="8,0,0,0" BorderThickness="0" Background="Transparent" DockPanel.Dock="Left"
                                             Command="{Binding CloseCommand}" >
                                         <Image Source="/icons/close.ico" Width="16" Height="16" />
                                     </Button>
-                                </StackPanel>
+                                </DockPanel>
                             </DataTemplate>
                         </Setter.Value>
                     </Setter>

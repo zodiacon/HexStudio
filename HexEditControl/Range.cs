@@ -56,13 +56,9 @@ namespace Zodiacon.HexEditControl {
 		}
 
 		public bool Intersects(Range other) {
-			var hasClosedInterval = Start.CompareTo(other.End) <= 0 && other.End.CompareTo(End) <= 0;
-
-			var hasOpenInterval =
-				 (Start.CompareTo(other.End) <= 0) || (End.CompareTo(other.Start) >= 0) ||
-				 (other.Start.CompareTo(End) <= 0) || (other.End.CompareTo(Start) >= 0);
-
-			return hasClosedInterval || hasOpenInterval;
+			var start = Math.Max(Start, other.Start);
+			var end = Math.Min(End, other.End);
+			return start <= end;
 		}
 
 		public override string ToString() {

@@ -1,7 +1,5 @@
-﻿using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zodiacon.HexEditControl;
-using Zodiacon.HexEditControl.Operations;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;

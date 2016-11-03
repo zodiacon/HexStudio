@@ -69,6 +69,18 @@ namespace HexStudio.ViewModels {
 			}
 		}
 
+		public ICommand CloseAllCommand => new DelegateCommand(() => {
+			var toClose = new List<OpenFileViewModel>(4);
+
+			foreach (var file in OpenFiles)
+				if (!file.IsModified || file.QueryCloseFile())
+					toClose.Add(file);
+
+			foreach (var file in toClose)
+				OpenFiles.Remove(file);
+		}, () => SelectedFile != null).
+			ObservesProperty(() => SelectedFile);
+
 		public ICommand OpenFileCommand => new DelegateCommand(() => {
 			var filename = FileDialogService.GetFileForOpen();
 			if (filename == null) return;
