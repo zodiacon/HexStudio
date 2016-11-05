@@ -261,15 +261,6 @@ namespace Zodiacon.HexEditControl {
 				_dataRanges.Remove(dr.Start);
 				i--;
 
-				if (left != null && !left.Range.IsEmpty)
-					_dataRanges.Add(left.Start, left);
-
-				if (right != null && !right.Range.IsEmpty) {
-					if (left == null || left.Range.IsEmpty)
-						right.Shift(change.Count);
-					_dataRanges.Add(right.Start, right);
-					i++;
-				}
 				//shift the rightmost ranges in reverse order to prevent accidental overlap
 				ranges = _dataRanges.Values;
 
@@ -280,6 +271,14 @@ namespace Zodiacon.HexEditControl {
 					_dataRanges.Add(dr.Start, dr);
 				}
 
+				if (!left.Range.IsEmpty)
+					_dataRanges.Add(left.Start, left);
+
+				if (!right.Range.IsEmpty) {
+					right.Shift(change.Count);
+					_dataRanges.Add(right.Start, right);
+				}
+
 				// finally, insert the change
 				_dataRanges.Add(change.Start, change);
 				_size += change.Count;
@@ -287,13 +286,11 @@ namespace Zodiacon.HexEditControl {
 		}
 
 		public void Delete(Range range) {
-			// look for entire ranges to remove
-
 			int i;
 			DataRange exactRange;
 			if ((i = _dataRanges.IndexOfKey(range.Start)) >= 0 && (exactRange = _dataRanges.Values[i]).Count == range.Count) {
 				_dataRanges.RemoveAt(i);
-				for (int j = _dataRanges.Count - 1; j >= i; --j) {
+				for (int j = i; j < _dataRanges.Count; ++j) {
 					var dr1 = _dataRanges.Values[j];
 					dr1.Shift(-range.Count);
 					_dataRanges.RemoveAt(j);
@@ -332,7 +329,27 @@ namespace Zodiacon.HexEditControl {
 					break;
 				}
 				if (dr.Range.Intersects(range)) {
-					// complex overlap
+                    // complex overlap
+                    var right = i < ranges.Count - 1? ranges[i + 1] : null;
+                    var left = i > 0 ? ranges[i - 1] : null;
+                    Debug.Assert(left != null || right != null);
+
+                    if (left != null) {
+                        _dataRanges.Remove(left.Start);
+                        left = left.GetSubRange(Range.FromStartToEnd(left.Start, range.Start - 1));
+                    }
+                    if (right != null) {
+                        _dataRanges.Remove(right.Start);
+                        right = right.GetSubRange(Range.FromStartToEnd(range.Start, right.End));
+                    }
+
+                    if (!left.IsEmpty) {
+                        _dataRanges.Add(left.Start, left);
+                    }
+                    if (!right.IsEmpty) {
+                        _dataRanges.Add(right.Start, right);
+                    }
+
 					break;
 				}
 			}
@@ -352,6 +369,7 @@ namespace Zodiacon.HexEditControl {
 
 		private void UpdateInsert(ByteRange change) {
 			Debug.Assert(_dataRanges.ContainsKey(change.Start));
+			Debug.Assert(change.Count == 1);
 
 			var i = _dataRanges.IndexOfKey(change.End);
 			if (i > -1) {

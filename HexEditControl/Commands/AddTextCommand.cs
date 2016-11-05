@@ -6,27 +6,29 @@ using System.Threading.Tasks;
 using Zodiacon.WPF;
 
 namespace Zodiacon.HexEditControl.Commands {
-	class AddTextCommand : IAppCommand {
-		int _undoIndex;
-		ByteBuffer _hexBuffer;
+    class AddTextCommand : HexEditCommandBase {
+        ByteRange _bytes;
+        byte[] _data;
 
-		public string Description => Name;
-		public bool Overwrite { get; }
-		public List<byte> Data { get; private set; }
+        public AddTextCommand(HexEdit hexEdit, long offset, byte[] data, bool overwrite) : base(hexEdit) {
+            _bytes = new ByteRange(offset, data);
+            Overwrite = overwrite;
+            // save old data
+            _data = new byte[data.Length];
+            hexEdit.Buffer.GetBytes(offset, data.Length, _data);
+        }
 
-		public AddTextCommand(ByteBuffer hexBuffer, byte[] data, bool overwrite) {
-			_hexBuffer = hexBuffer;
-			Overwrite = overwrite;
-			Data = new List<byte>(data);
-		}
+        public bool Overwrite { get; }
 
-		public string Name => Overwrite ? "Overwrite" : "Insert";
+        public override void Execute() {
+            if (Overwrite)
+                HexEdit.Buffer.Overwrite(_bytes);
+            else
+                HexEdit.Buffer.Insert(_bytes);
+        }
 
-		public void Execute() {
-
-		}
-
-		public void Undo() {
-		}
-	}
+        public override void Undo() {
+            HexEdit.Buffer.Delete(_bytes.Range);
+        }
+    }
 }

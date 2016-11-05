@@ -61,6 +61,7 @@
     <Compile Include="ByteRange.cs" />
     <Compile Include="Commands\AddBulkTextCommand.cs" />
     <Compile Include="Commands\AddTextCommand.cs" />
+    <Compile Include="Commands\DeleteBulkTextCommand.cs" />
     <Compile Include="Commands\HexEditCommandBase.cs" />
     <Compile Include="IEditOperation.cs" />
     <Compile Include="FileRange.cs" />

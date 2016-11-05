@@ -9,6 +9,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
+using Zodiacon.HexEditControl.Commands;
 using Zodiacon.WPF;
 
 namespace Zodiacon.HexEditControl {
@@ -357,8 +358,9 @@ namespace Zodiacon.HexEditControl {
 						ClearChange();
 
 						if (SelectionLength > 0) {
-							// delete selection
-							_hexBuffer.Delete(Range.FromStartToEnd(SelectionStart, SelectionEnd));
+                            var cmd = new DeleteBulkTextCommand(this, Range.FromStartToEnd(SelectionStart, SelectionEnd));
+                            _commandManager.AddCommand(cmd);
+                            ClearSelection();
 						}
 						else {
 							// delete

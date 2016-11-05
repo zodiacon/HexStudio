@@ -21,6 +21,8 @@ namespace Zodiacon.HexEditControl {
 
 		public abstract void WriteData(long position, MemoryMappedViewAccessor accessor);
 
+        public bool IsEmpty => this == EmptyDataRange.Instance;
+
 		protected DataRange(Range range) {
 			Range = range;
 		}
