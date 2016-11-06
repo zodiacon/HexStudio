@@ -329,26 +329,30 @@ namespace Zodiacon.HexEditControl {
 					break;
 				}
 				if (dr.Range.Intersects(range)) {
-                    // complex overlap
-                    var right = i < ranges.Count - 1? ranges[i + 1] : null;
-                    var left = i > 0 ? ranges[i - 1] : null;
-                    Debug.Assert(left != null || right != null);
+					// complex overlap
+					var right = i < ranges.Count - 1 ? ranges[i + 1] : null;
+					var left = i > 0 ? ranges[i - 1] : null;
+					if (left == null && right == null) {
+						_dataRanges.Clear();
+						_size = 0;
+						break;
+					}
 
-                    if (left != null) {
-                        _dataRanges.Remove(left.Start);
-                        left = left.GetSubRange(Range.FromStartToEnd(left.Start, range.Start - 1));
-                    }
-                    if (right != null) {
-                        _dataRanges.Remove(right.Start);
-                        right = right.GetSubRange(Range.FromStartToEnd(range.Start, right.End));
-                    }
+					if (left != null) {
+						_dataRanges.Remove(left.Start);
+						left = left.GetSubRange(Range.FromStartToEnd(left.Start, range.Start - 1));
+					}
+					if (right != null) {
+						_dataRanges.Remove(right.Start);
+						right = right.GetSubRange(Range.FromStartToEnd(range.Start, right.End));
+					}
 
-                    if (!left.IsEmpty) {
-                        _dataRanges.Add(left.Start, left);
-                    }
-                    if (!right.IsEmpty) {
-                        _dataRanges.Add(right.Start, right);
-                    }
+					if (left != null && !left.IsEmpty) {
+						_dataRanges.Add(left.Start, left);
+					}
+					if (right != null && !right.IsEmpty) {
+						_dataRanges.Add(right.Start, right);
+					}
 
 					break;
 				}
@@ -369,7 +373,7 @@ namespace Zodiacon.HexEditControl {
 
 		private void UpdateInsert(ByteRange change) {
 			Debug.Assert(_dataRanges.ContainsKey(change.Start));
-			Debug.Assert(change.Count == 1);
+//			Debug.Assert(change.Count == 1);
 
 			var i = _dataRanges.IndexOfKey(change.End);
 			if (i > -1) {
