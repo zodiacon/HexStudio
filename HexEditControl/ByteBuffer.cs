@@ -6,21 +6,28 @@ using System.IO.MemoryMappedFiles;
 using System.Linq;
 
 namespace Zodiacon.HexEditControl {
-	public class ByteBuffer : IDisposable {
+	public sealed class ByteBuffer : IDisposable {
 		MemoryMappedViewAccessor _accessor;
 		MemoryMappedFile _memFile;
 		byte[] _byteBuffer;
-		long _size;
 		string _filename;
 		SortedList<long, DataRange> _dataRanges = new SortedList<long, DataRange>(64);
 
-		public ByteBuffer(string filename) {
+        public long Size { get; private set; }
+
+        public event Action<long, long> SizeChanged;
+
+        void OnSizeChanged(long oldSize) {
+            SizeChanged?.Invoke(oldSize, Size);
+        }
+
+        public ByteBuffer(string filename) {
 			Open(filename);
 		}
 
 		void Open(string filename) {
 			_filename = filename;
-			_size = new FileInfo(filename).Length;
+			Size = new FileInfo(filename).Length;
 			_memFile = MemoryMappedFile.CreateFromFile(filename);
 			_accessor = _memFile.CreateViewAccessor();
 			_dataRanges.Clear();
@@ -31,15 +38,13 @@ namespace Zodiacon.HexEditControl {
 		public ByteBuffer(long size, long limit) {
 			_memFile = MemoryMappedFile.CreateNew(null, limit);
 			_accessor = _memFile.CreateViewAccessor();
-			_size = size;
+			Size = size;
 		}
 
 		public ByteBuffer(byte[] buffer) {
 			_byteBuffer = buffer;
-			_size = buffer.LongLength;
+			Size = buffer.LongLength;
 		}
-
-		public long Size => _size;
 
 		ByteRange _currentRange;
 		bool _overwrite;
@@ -53,22 +58,6 @@ namespace Zodiacon.HexEditControl {
 				_accessor.ReadArray(fileOffset, bytes, currentIndex, count);
 			else
 				Array.Copy(_byteBuffer, fileOffset, bytes, currentIndex, count);
-		}
-
-		void WriteData(long offset, byte[] data, int count = 0) {
-			if (count == 0)
-				count = data.Length;
-
-			if (_accessor != null) {
-				_accessor.WriteArray(offset, data, 0, count);
-			}
-			else {
-				if (offset + count > _byteBuffer.Length) {
-					Array.Resize(ref _byteBuffer, (int)offset + count);
-					_size = offset + count;
-				}
-				Array.Copy(data, 0, _byteBuffer, offset, count);
-			}
 		}
 
 		public void ApplyChanges() {
@@ -100,10 +89,12 @@ namespace Zodiacon.HexEditControl {
 		public IEnumerable<DataRange> DataRanges => _dataRanges.Select(item => item.Value);
 
 		public void DiscardChanges() {
-			_size = new FileInfo(_filename).Length;
+            var oldSize = Size;
+			Size = new FileInfo(_filename).Length;
 			_dataRanges.Clear();
-			_dataRanges.Add(0, new FileRange(Range.FromStartAndCount(0, _size), 0, _accessor));
+			_dataRanges.Add(0, new FileRange(Range.FromStartAndCount(0, Size), 0, _accessor));
 			_currentRange = null;
+            OnSizeChanged(oldSize);
 		}
 
 		public void Dispose() {
@@ -203,7 +194,9 @@ namespace Zodiacon.HexEditControl {
 			if (index >= ranges.Count) {
 				// add at the end
 				_dataRanges.Add(change.Start, change);
-				_size = change.End + 1;
+                var oldSize = Size;
+				Size = change.End + 1;
+                OnSizeChanged(oldSize);
 				return;
 			}
 
@@ -220,8 +213,11 @@ namespace Zodiacon.HexEditControl {
 			if (left != null && !left.Range.IsEmpty)
 				_dataRanges.Add(left.Start, left);
 			_dataRanges.Add(change.Start, change);
-			if (change.End >= _size)
-				_size = change.End + 1;
+            if (change.End >= Size) {
+                var oldSize = Size;
+                Size = change.End + 1;
+                OnSizeChanged(oldSize);
+            }
 
 			if (right != null && !right.Range.IsEmpty)
 				_dataRanges.Add(right.Start, right);
@@ -251,7 +247,9 @@ namespace Zodiacon.HexEditControl {
 				// just add the change
 				Debug.Assert(change.Start == Size);
 				_dataRanges.Add(change.Start, change);
-				_size = change.End + 1;
+                var oldSize = Size;
+				Size = change.End + 1;
+                OnSizeChanged(oldSize);
 			}
 			else {
 				// split current
@@ -281,7 +279,8 @@ namespace Zodiacon.HexEditControl {
 
 				// finally, insert the change
 				_dataRanges.Add(change.Start, change);
-				_size += change.Count;
+				Size += change.Count;
+                OnSizeChanged(Size - change.Count);
 			}
 		}
 
@@ -296,7 +295,8 @@ namespace Zodiacon.HexEditControl {
 					_dataRanges.RemoveAt(j);
 					_dataRanges.Add(dr1.Start, dr1);
 				}
-				_size -= range.Count;
+				Size -= range.Count;
+                OnSizeChanged(Size + range.Count);
 				return;
 			}
 
@@ -325,7 +325,8 @@ namespace Zodiacon.HexEditControl {
 						right.Shift(-range.Count);
 						_dataRanges.Add(right.Start, right);
 					}
-					_size -= range.Count;
+					Size -= range.Count;
+                    OnSizeChanged(Size + range.Count);
 					break;
 				}
 				if (dr.Range.Intersects(range)) {
@@ -334,7 +335,9 @@ namespace Zodiacon.HexEditControl {
 					var left = i > 0 ? ranges[i - 1] : null;
 					if (left == null && right == null) {
 						_dataRanges.Clear();
-						_size = 0;
+                        var oldSize = Size;
+						Size = 0;
+                        OnSizeChanged(oldSize);
 						break;
 					}
 
@@ -385,7 +388,8 @@ namespace Zodiacon.HexEditControl {
 					_dataRanges.Add(dr.Start, dr);
 				}
 			}
-			_size++;
+			Size++;
+            OnSizeChanged(Size - 1);
 		}
 	}
 }

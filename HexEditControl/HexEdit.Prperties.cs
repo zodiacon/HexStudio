@@ -60,7 +60,6 @@ namespace Zodiacon.HexEditControl {
 			SetCaretPosition(CaretOffset);
 			MakeVisible(CaretOffset);
 			_inputIndex = _wordIndex = 0;
-			_lastValue = 0;
 		}
 
 		private void SetCaretPosition(long caretOffset) {

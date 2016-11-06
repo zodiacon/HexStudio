@@ -78,17 +78,31 @@ namespace Zodiacon.HexEditControl {
 
 		public void CreateNew(long sizeLimit = 1 << 20) {
 			Dispose();
+            if (_hexBuffer != null)
+                _hexBuffer.SizeChanged -= _hexBuffer_SizeChanged;
+
 			_hexBuffer = new ByteBuffer(0, _sizeLimit = sizeLimit);
+            _hexBuffer.SizeChanged += _hexBuffer_SizeChanged;
 		}
 
-		public void OpenFile(string filename) {
+        private void _hexBuffer_SizeChanged(long oldSize, long newSize) {
+            if (Math.Abs(oldSize - newSize) > BytesPerLine) {
+                Recalculate();
+            }
+        }
+
+        public void OpenFile(string filename) {
 			if (string.IsNullOrWhiteSpace(filename))
 				throw new ArgumentException("Filename is empty or null", nameof(filename));
 
 			Dispose();
 
-			_sizeLimit = 0;
+            if (_hexBuffer != null)
+                _hexBuffer.SizeChanged -= _hexBuffer_SizeChanged;
+
+            _sizeLimit = 0;
 			_hexBuffer = new ByteBuffer(filename);
+            _hexBuffer.SizeChanged += _hexBuffer_SizeChanged;
 			Refresh();
 		}
 
@@ -417,16 +431,20 @@ namespace Zodiacon.HexEditControl {
 			if (!IsModified)
 				IsModified = true;
 
-			ClearSelection();
-
 			if (_currentChange == null) {
 				// create a new change set
-				var overwrite = OverwriteMode;
-				if (CaretOffset == _hexBuffer.Size)
-					overwrite = false;
 
-				_currentChange = new ByteRange(CaretOffset);
-				_hexBuffer.AddChange(_currentChange, OverwriteMode);
+                if (SelectionLength > 0) {
+                    CaretOffset = SelectionStart;
+                    _commandManager.AddCommand(new DeleteBulkTextCommand(this, Range.FromStartToEnd(SelectionStart, SelectionEnd)));
+                    ClearSelection();
+                }
+                var overwrite = OverwriteMode;
+                if (CaretOffset == _hexBuffer.Size)
+                    overwrite = false;
+
+                _currentChange = new ByteRange(CaretOffset);
+                _hexBuffer.AddChange(_currentChange, overwrite);
 			}
 
 			if (_inputIndex == 0) {
