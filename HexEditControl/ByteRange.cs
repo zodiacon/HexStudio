@@ -11,12 +11,12 @@ namespace Zodiacon.HexEditControl {
 	public class ByteRange : DataRange {
 		byte[] Data;
 
-		public ByteRange(long offset, byte[] data) : base(Range.FromStartAndCount(offset, data.Length)) {
+		public ByteRange(long offset, params byte[] data) : base(Range.FromStartAndCount(offset, data.Length)) {
 			Data = data;
 		}
 
 		public ByteRange(long offset) : base(Range.FromStartAndCount(offset, 0)) {
-			Data = new byte[10];
+			Data = new byte[8];
 		}
 
 		public void SetData(int index, byte data) {

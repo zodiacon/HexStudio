@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.IO.MemoryMappedFiles;
@@ -413,12 +414,12 @@ namespace Zodiacon.HexEditControl {
 
 		void ClearChange() {
 			_currentChange = null;
-			_inputIndex = _wordIndex = 0;
+			InputIndex = WordIndex = 0;
 			_lastValue = 0;
 			CaretOffset -= CaretOffset % WordSize;
 		}
 
-		int _inputIndex = 0, _wordIndex = 0;
+		internal int InputIndex, WordIndex;
 		byte _lastValue = 0;
 		ByteRange _currentChange;
 
@@ -435,7 +436,8 @@ namespace Zodiacon.HexEditControl {
 			if (!IsModified)
 				IsModified = true;
 
-			if (_currentChange == null) {
+            var overwrite = OverwriteMode;
+            if (_currentChange == null) {
 				// create a new change set
 
 				if (SelectionLength > 0) {
@@ -443,32 +445,36 @@ namespace Zodiacon.HexEditControl {
 					_commandManager.AddCommand(new DeleteBulkTextCommand(this, Range.FromStartToEnd(SelectionStart, SelectionEnd)));
 					ClearSelection();
 				}
-				var overwrite = OverwriteMode;
 				if (CaretOffset == _hexBuffer.Size)
 					overwrite = false;
 
-				_currentChange = new ByteRange(CaretOffset);
-				_hexBuffer.AddChange(_currentChange, overwrite);
+				//_currentChange = new ByteRange(CaretOffset);
+				//_hexBuffer.AddChange(_currentChange, overwrite);
 			}
 
-			if (_inputIndex == 0) {
-				_currentChange.AddData(_lastValue);
-				_hexBuffer.UpdateChange();
+            Debug.Assert(InputIndex <= 1);
+
+			if (InputIndex == 0) {
+                //				_currentChange.AddData(_lastValue);
+                //				_hexBuffer.UpdateChange();
+                _commandManager.AddCommand(new AddByteCommand(this, CaretOffset, _lastValue, overwrite, InputIndex, WordIndex, WordSize));
 			}
 			else {
-				_currentChange.SetData((int)_currentChange.Count - 1, _lastValue);
+                _commandManager.AddCommand(new AddByteCommand(this, CaretOffset, _lastValue, true, InputIndex, WordIndex, WordSize));
+                _lastValue = 0;
+//                _currentChange.SetData((int)_currentChange.Count - 1, _lastValue);
 			}
-			if (++_inputIndex == 2) {
-				_inputIndex = 0;
-				if (_wordIndex % 2 == 1)
-					_currentChange.SwapLastBytes(_wordIndex + 1);
+			if (++InputIndex == 2) {
+				InputIndex = 0;
+                //if (_wordIndex % 2 == 1)
+                //	_currentChange.SwapLastBytes(_wordIndex + 1);
 
-				if (++_wordIndex == WordSize) {
-					CaretOffset += WordSize;
-					_wordIndex = 0;
-				}
-			}
-			InvalidateVisual();
+                if (++WordIndex == WordSize) {
+                    //CaretOffset += WordSize;
+                    WordIndex = 0;
+                }
+            }
+			//InvalidateVisual();
 		}
 
 		private void ClearSelection() {
