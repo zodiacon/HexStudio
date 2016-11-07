@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace HexStudio {
-	class Settings {
+	public class Settings {
 		public List<string> RecentFiles { get; set; }
 	}
 }

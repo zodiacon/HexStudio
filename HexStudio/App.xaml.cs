@@ -15,6 +15,8 @@ namespace HexStudio {
 	/// Interaction logic for App.xaml
 	/// </summary>
 	public partial class App : Application {
+		MainViewModel _mainViewModel;
+
 		protected override void OnStartup(StartupEventArgs e) {
 			var catalog = new AggregateCatalog(
 				new AssemblyCatalog(Assembly.GetExecutingAssembly()),
@@ -22,10 +24,14 @@ namespace HexStudio {
 			var container = new CompositionContainer(catalog);
 
 			var vm = container.GetExportedValue<MainViewModel>();
+			_mainViewModel = vm;
 			var win = new MainWindow { DataContext = vm };
 			vm.MessageBoxService.SetOwner(win);
 			win.Show();
 		}
 
+		private void Application_Exit(object sender, ExitEventArgs e) {
+			_mainViewModel.SaveSettings();
+		}
 	}
 }

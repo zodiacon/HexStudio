@@ -78,31 +78,31 @@ namespace Zodiacon.HexEditControl {
 
 		public void CreateNew(long sizeLimit = 1 << 20) {
 			Dispose();
-            if (_hexBuffer != null)
-                _hexBuffer.SizeChanged -= _hexBuffer_SizeChanged;
+			if (_hexBuffer != null)
+				_hexBuffer.SizeChanged -= _hexBuffer_SizeChanged;
 
 			_hexBuffer = new ByteBuffer(0, _sizeLimit = sizeLimit);
-            _hexBuffer.SizeChanged += _hexBuffer_SizeChanged;
+			_hexBuffer.SizeChanged += _hexBuffer_SizeChanged;
 		}
 
-        private void _hexBuffer_SizeChanged(long oldSize, long newSize) {
-            if (Math.Abs(oldSize - newSize) > BytesPerLine) {
-                Recalculate();
-            }
-        }
+		private void _hexBuffer_SizeChanged(long oldSize, long newSize) {
+			if (Math.Abs(oldSize - newSize) > BytesPerLine) {
+				Recalculate();
+			}
+		}
 
-        public void OpenFile(string filename) {
+		public void OpenFile(string filename) {
 			if (string.IsNullOrWhiteSpace(filename))
 				throw new ArgumentException("Filename is empty or null", nameof(filename));
 
 			Dispose();
 
-            if (_hexBuffer != null)
-                _hexBuffer.SizeChanged -= _hexBuffer_SizeChanged;
+			if (_hexBuffer != null)
+				_hexBuffer.SizeChanged -= _hexBuffer_SizeChanged;
 
-            _sizeLimit = 0;
+			_sizeLimit = 0;
 			_hexBuffer = new ByteBuffer(filename);
-            _hexBuffer.SizeChanged += _hexBuffer_SizeChanged;
+			_hexBuffer.SizeChanged += _hexBuffer_SizeChanged;
 			Refresh();
 		}
 
@@ -349,20 +349,24 @@ namespace Zodiacon.HexEditControl {
 						break;
 
 					case Key.PageDown:
-						if ((modifiers & ModifierKeys.Control) == ModifierKeys.Control)
-							CaretOffset = _hexBuffer.Size - _hexBuffer.Size % WordSize - 1;
+						if ((modifiers & ModifierKeys.Control) == ModifierKeys.Control) {
+							CaretOffset = _hexBuffer.Size - _hexBuffer.Size % WordSize;
+							MakeVisible(CaretOffset);
+						}
 						else
 							CaretOffset += BytesPerLine * _viewLines;
 						break;
 
 					case Key.PageUp:
-						if ((modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+						if ((modifiers & ModifierKeys.Control) == ModifierKeys.Control) {
 							CaretOffset = 0;
+							MakeVisible(0);
+						}
 						else
 							CaretOffset -= BytesPerLine * _viewLines;
 						break;
 
-					case Key.Back:				
+					case Key.Back:
 						if (CaretOffset < WordSize)
 							break;
 						CaretOffset -= WordSize;
@@ -372,9 +376,9 @@ namespace Zodiacon.HexEditControl {
 						ClearChange();
 
 						if (SelectionLength > 0) {
-                            var cmd = new DeleteBulkTextCommand(this, Range.FromStartToEnd(SelectionStart, SelectionEnd));
-                            _commandManager.AddCommand(cmd);
-                            ClearSelection();
+							var cmd = new DeleteBulkTextCommand(this, Range.FromStartToEnd(SelectionStart, SelectionEnd));
+							_commandManager.AddCommand(cmd);
+							ClearSelection();
 						}
 						else {
 							// delete
@@ -434,17 +438,17 @@ namespace Zodiacon.HexEditControl {
 			if (_currentChange == null) {
 				// create a new change set
 
-                if (SelectionLength > 0) {
-                    CaretOffset = SelectionStart;
-                    _commandManager.AddCommand(new DeleteBulkTextCommand(this, Range.FromStartToEnd(SelectionStart, SelectionEnd)));
-                    ClearSelection();
-                }
-                var overwrite = OverwriteMode;
-                if (CaretOffset == _hexBuffer.Size)
-                    overwrite = false;
+				if (SelectionLength > 0) {
+					CaretOffset = SelectionStart;
+					_commandManager.AddCommand(new DeleteBulkTextCommand(this, Range.FromStartToEnd(SelectionStart, SelectionEnd)));
+					ClearSelection();
+				}
+				var overwrite = OverwriteMode;
+				if (CaretOffset == _hexBuffer.Size)
+					overwrite = false;
 
-                _currentChange = new ByteRange(CaretOffset);
-                _hexBuffer.AddChange(_currentChange, overwrite);
+				_currentChange = new ByteRange(CaretOffset);
+				_hexBuffer.AddChange(_currentChange, overwrite);
 			}
 
 			if (_inputIndex == 0) {

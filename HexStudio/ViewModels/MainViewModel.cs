@@ -7,6 +7,7 @@ using System.ComponentModel.Composition;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -19,6 +20,9 @@ namespace HexStudio.ViewModels {
 	class MainViewModel : BindableBase {
 		ObservableCollection<OpenFileViewModel> _openFiles = new ObservableCollection<OpenFileViewModel>();
 		ObservableCollection<string> _recentFiles = new ObservableCollection<string>();
+		Settings _settings;
+
+		public Settings Settings => _settings;
 
 #pragma warning disable 649
 		[Import]
@@ -29,6 +33,10 @@ namespace HexStudio.ViewModels {
 
 		public IFileDialogService FileDialogService => UIServices.FileDialogService;
 		public IMessageBoxService MessageBoxService => UIServices.MessageBoxService;
+
+		public MainViewModel() {
+			LoadSettings();
+		}
 
 		public bool QueryCloseAll() {
 			if (!OpenFiles.Any(file => file.IsModified))
@@ -106,7 +114,15 @@ namespace HexStudio.ViewModels {
 				SelectedFile = OpenFiles[index];
 		}
 
+		public ICommand OpenRecentFileCommand => new DelegateCommand<string>(filename => OpenFileInternal(filename));
+
 		private void OpenFileInternal(string filename) {
+			var exitingFile = _openFiles.FirstOrDefault(openfile => openfile.FileName == filename);
+			if (exitingFile != null) {
+				SelectedFile = exitingFile;
+				return;
+			}
+
 			var file = new OpenFileViewModel(this);
 			file.Ready += delegate {
 				Dispatcher.CurrentDispatcher.InvokeAsync(() => {
@@ -120,7 +136,38 @@ namespace HexStudio.ViewModels {
 				});
 			};
 			OpenFiles.Add(file);
+			_recentFiles.Remove(filename);
+			_recentFiles.Insert(0, filename);
+			if (_recentFiles.Count > 10)
+				_recentFiles.RemoveAt(9);
 			SelectedFile = file;
+		}
+
+		string GetSettingsFilename() {
+			return Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + @"\HexStudio.settings";
+		}
+
+		public void SaveSettings() {
+			using (var stm = File.Open(GetSettingsFilename(), FileMode.Create)) {
+				_settings.RecentFiles = _recentFiles.ToList();
+				var serializer = new DataContractSerializer(typeof(Settings));
+				serializer.WriteObject(stm, _settings);	
+			}
+		}
+
+		public void LoadSettings() {
+			try {
+				using (var stm = File.Open(GetSettingsFilename(), FileMode.Open)) {
+					var serializer = new DataContractSerializer(typeof(Settings));
+					_settings = (Settings)serializer.ReadObject(stm);
+					_recentFiles = new ObservableCollection<string>(_settings.RecentFiles);
+				}
+			}
+			catch { }
+			finally {
+				if (_settings == null)
+					_settings = new Settings();
+			}
 		}
 
 		public bool IsSelectedFile => SelectedFile != null;
