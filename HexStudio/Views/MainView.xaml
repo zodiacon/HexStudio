@@ -104,7 +104,8 @@
             
         </TabControl>
         <StatusBar Grid.Row="3">
-            
+            <TextBlock Text="{Binding SelectedFile.FileName}" />
+            <TextBlock Text="{Binding SelectedFile.Size, StringFormat=(\{0\} bytes)}" Margin="4,0,0,0"/>
         </StatusBar>
     </Grid>
 </UserControl>

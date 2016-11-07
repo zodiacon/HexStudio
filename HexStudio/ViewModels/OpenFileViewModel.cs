@@ -16,6 +16,8 @@ namespace HexStudio.ViewModels {
 
 		public event EventHandler Ready;
 
+        public long? Size => _editor?.Buffer.Size;
+
 		public OpenFileViewModel(MainViewModel mainViewModel) {
 			_mainViewModel = mainViewModel;
 
@@ -46,6 +48,7 @@ namespace HexStudio.ViewModels {
 		public void OpenFile(string filename) {
 			_editor.OpenFile(filename);
 			FileName = filename;
+            OnPropertyChanged(nameof(Size));
 		}
 
 		private string _filename;
