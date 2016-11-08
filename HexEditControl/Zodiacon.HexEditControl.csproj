@@ -63,7 +63,6 @@
     <Compile Include="Commands\AddByteCommand.cs" />
     <Compile Include="Commands\DeleteBulkTextCommand.cs" />
     <Compile Include="Commands\HexEditCommandBase.cs" />
-    <Compile Include="IEditOperation.cs" />
     <Compile Include="FileRange.cs" />
     <Compile Include="HexEdit.Prperties.cs" />
     <Compile Include="HexEdit.xaml.cs">
@@ -85,7 +84,6 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
     <Compile Include="Range.cs" />
-    <Compile Include="RenderState.cs" />
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>

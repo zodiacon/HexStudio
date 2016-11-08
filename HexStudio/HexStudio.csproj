@@ -82,8 +82,12 @@
     <Compile Include="Models\RgbColor.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="TabControlProperties.cs" />
+    <Compile Include="ViewModels\FindDialogViewModel.cs" />
     <Compile Include="ViewModels\MainViewModel.cs" />
     <Compile Include="ViewModels\OpenFileViewModel.cs" />
+    <Compile Include="Views\FindDialogView.xaml.cs">
+      <DependentUpon>FindDialogView.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Views\MainView.xaml.cs">
       <DependentUpon>MainView.xaml</DependentUpon>
     </Compile>
@@ -102,6 +106,10 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Page Include="Views\FindDialogView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Views\MainView.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -192,6 +200,9 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Icons\delete.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Behaviors\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

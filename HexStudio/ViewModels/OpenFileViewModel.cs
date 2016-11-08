@@ -17,7 +17,7 @@ namespace HexStudio.ViewModels {
         public event EventHandler Ready;
 
         public long? Size => _editor?.Buffer.Size;
-
+       
         private long _offset;
 
         static int[] _bytesPerLines = { 8, 16, 24, 32, 48, 64, 96, 128 };
@@ -37,7 +37,7 @@ namespace HexStudio.ViewModels {
 
         public long Offset {
             get { return _offset; }
-            private set { SetProperty(ref _offset, value); }
+            set { SetProperty(ref _offset, value); }
         }
 
         public OpenFileViewModel(MainViewModel mainViewModel) {

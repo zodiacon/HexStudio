@@ -64,7 +64,7 @@
                 <MenuItem Header="Overwrite Mode" InputGestureText="Insert" IsCheckable="True" IsChecked="{Binding SelectedFile.OverwriteMode}" IsEnabled="{Binding IsSelectedFile}" />
                 <Separator />
                 <MenuItem Header="_Find..." InputGestureText="Ctrl+F" Icon="{z:Image /icons/find.ico, Width=20, Height=20}" 
-                          Command="{Binding SelectedFile.FindCommand, FallbackValue={x:Static vm:MainViewModel.EmptyCommand}}" />
+                          Command="{Binding FindCommand}" />
             </MenuItem>
             <MenuItem Header="_View">
                 <MenuItem Header="_Goto Offset..." Command="{Binding SelectedFile.GotoOffsetCommand, FallbackValue={x:Static vm:MainViewModel.EmptyCommand}}" />

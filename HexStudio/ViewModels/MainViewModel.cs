@@ -33,6 +33,7 @@ namespace HexStudio.ViewModels {
 
 		public IFileDialogService FileDialogService => UIServices.FileDialogService;
 		public IMessageBoxService MessageBoxService => UIServices.MessageBoxService;
+		public IDialogService DialogService => UIServices.DialogService;
 
 		public MainViewModel() {
 			LoadSettings();
@@ -171,5 +172,12 @@ namespace HexStudio.ViewModels {
 		}
 
 		public bool IsSelectedFile => SelectedFile != null;
+
+		public ICommand FindCommand => new DelegateCommand(() => {
+			// find dialog
+			var vm = DialogService.CreateDialog<FindDialogViewModel, Window>();
+			if (true == vm.ShowDialog()) {
+			}
+		}, () => SelectedFile != null).ObservesProperty(() => SelectedFile);
 	}
 }

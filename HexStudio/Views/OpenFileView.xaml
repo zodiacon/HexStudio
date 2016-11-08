@@ -31,8 +31,9 @@
             </DockPanel.Resources>
             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
                 <TextBlock Text="Offset:" VerticalAlignment="Center" />
-                <TextBox Margin="2,0,0,0" VerticalAlignment="Center" BorderThickness="0" IsReadOnly="True" Text="{Binding Offset, Mode=OneWay, StringFormat=X}"
-                         TextAlignment="Right" MinWidth="70" FontWeight="Bold"/>
+                <TextBox Margin="2,0,0,0" VerticalAlignment="Center" BorderThickness="1" IsReadOnly="True" Text="{Binding Offset, Mode=OneWay, StringFormat=X}"
+                         TextAlignment="Right" MinWidth="70" FontWeight="Bold" />
+                <TextBlock Text="H" VerticalAlignment="Center" Margin="2,0,0,0"/>
             </StackPanel>
             
             <RadioButton DockPanel.Dock="Left" Content="1" IsChecked="{Binding Is1Byte}" GroupName="Chunk" Margin="8,0,2,0"/>
