@@ -21,7 +21,29 @@ namespace Zodiacon.HexEditControl {
 				(s, e) => ((HexEdit)s).ExecuteUndo(e), (s, e) => ((HexEdit)s).CanExecuteUndo(e)));
 			CommandManager.RegisterClassCommandBinding(typeof(HexEdit), new CommandBinding(ApplicationCommands.Redo,
 				(s, e) => ((HexEdit)s).ExecuteRedo(e), (s, e) => ((HexEdit)s).CanExecuteRedo(e)));
-		}
+            CommandManager.RegisterClassCommandBinding(typeof(HexEdit), new CommandBinding(ApplicationCommands.Delete,
+                (s, e) => ((HexEdit)s).ExecuteDelete(e), (s, e) => ((HexEdit)s).CanExecuteDelete(e)));
+        }
+
+        private void CanExecuteDelete(CanExecuteRoutedEventArgs e) {
+            e.CanExecute = !IsReadOnly && (SelectionLength > 0 || CaretOffset < _hexBuffer.Size - WordSize);
+        }
+
+        private void ExecuteDelete(ExecutedRoutedEventArgs e) {
+            if (SelectionLength > 0) {
+                AddCommand(new DeleteBulkTextCommand(this, Range.FromStartToEnd(SelectionStart, SelectionEnd)));
+                ClearSelection();
+            }
+            else {
+                AddCommand(new DeleteBulkTextCommand(this, Range.FromStartAndCount(CaretOffset, WordSize)));
+            }
+        }
+
+        void AddCommand(IAppCommand cmd, bool execute = true) {
+            _commandManager.AddCommand(cmd);
+            IsModified = _commandManager.CanUndo;
+            InvalidateVisual();
+        }
 
 		private void CanExecuteUndo(CanExecuteRoutedEventArgs e) {
 			e.CanExecute = _commandManager.CanUndo;
@@ -29,13 +51,15 @@ namespace Zodiacon.HexEditControl {
 
 		private void ExecuteUndo(ExecutedRoutedEventArgs e) {
 			_commandManager.Undo();
+            IsModified = _commandManager.CanUndo;
 		}
 
 		private void ExecuteRedo(ExecutedRoutedEventArgs e) {
 			_commandManager.Redo();
-		}
+            IsModified = _commandManager.CanUndo;
+        }
 
-		private void CanExecuteRedo(CanExecuteRoutedEventArgs e) {
+        private void CanExecuteRedo(CanExecuteRoutedEventArgs e) {
 			e.CanExecute = _commandManager.CanRedo;
 		}
 
@@ -48,7 +72,7 @@ namespace Zodiacon.HexEditControl {
 		}
 
 		private void CanExecuteCut(CanExecuteRoutedEventArgs e) {
-			e.CanExecute = !IsReadOnly && Clipboard.ContainsData(DataFormats.Serializable);
+            e.CanExecute = !IsReadOnly && SelectionLength > 0 && SelectionLength < 1 << 30;
 		}
 
 		private void CanExecuteCopy(CanExecuteRoutedEventArgs e) {
@@ -69,7 +93,8 @@ namespace Zodiacon.HexEditControl {
 			}
 		}
 		private void ExecuteCut(ExecutedRoutedEventArgs e) {
-			// TODO
+            ExecuteCopy(e);
+            ExecuteDelete(e);
 		}
 	}
 }

@@ -57,6 +57,7 @@
                 <MenuItem Header="_Copy" Icon="{z:Image /icons/copy.ico, Width=20, Height=20}" Command="Copy" />
                 <MenuItem Header="C_ut" Icon="{z:Image /icons/cut.ico, Width=20, Height=20}" Command="Cut" />
                 <MenuItem Header="_Paste" Icon="{z:Image /icons/paste.ico, Width=20, Height=20}" Command="Paste" />
+                <MenuItem Header="Delete" InputGestureText="Delete" Icon="{z:Image /icons/delete.ico, Width=20, Height=20}" Command="Delete" />
                 <Separator />
                 <MenuItem Header="Select _All" Command="SelectAll" />
                 <Separator />

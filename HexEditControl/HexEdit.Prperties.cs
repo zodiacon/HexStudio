@@ -21,6 +21,14 @@ namespace Zodiacon.HexEditControl {
 			UpdateCaretWidth();
 		}
 
+        public static readonly RoutedEvent CaretPositionChangedEvent =
+            EventManager.RegisterRoutedEvent(nameof(CaretPositionChanged), RoutingStrategy.Bubble, typeof(RoutedEventHandler), typeof(HexEdit));
+
+        public event RoutedEventHandler CaretPositionChanged {
+            add { AddHandler(CaretPositionChangedEvent, value); }
+            remove { RemoveHandler(CaretPositionChangedEvent, value); }
+        }
+
 		void UpdateCaretWidth() {
 			_caret.Width = OverwriteMode ? _charWidth : SystemParameters.CaretWidth;
 		}
@@ -59,7 +67,7 @@ namespace Zodiacon.HexEditControl {
 		private void OnCaretOffsetChanged(DependencyPropertyChangedEventArgs e) {
 			SetCaretPosition(CaretOffset);
 			MakeVisible(CaretOffset);
-//			InputIndex = WordIndex = 0;
+            RaiseEvent(new RoutedEventArgs(CaretPositionChangedEvent));
 		}
 
 		private void SetCaretPosition(long caretOffset) {
@@ -91,7 +99,8 @@ namespace Zodiacon.HexEditControl {
 		}
 
 		public static readonly DependencyProperty BytesPerLineProperty =
-			 DependencyProperty.Register(nameof(BytesPerLine), typeof(int), typeof(HexEdit), new PropertyMetadata(32, (s, e) => ((HexEdit)s).Refresh()), ValidateBytesPerLine);
+			 DependencyProperty.Register(nameof(BytesPerLine), typeof(int), typeof(HexEdit), 
+                 new PropertyMetadata(32, (s, e) => ((HexEdit)s).Refresh()), ValidateBytesPerLine);
 
 		private static bool ValidateBytesPerLine(object value) {
 			var bytes = (int)value;
