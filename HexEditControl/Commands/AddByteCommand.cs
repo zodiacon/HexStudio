@@ -35,7 +35,7 @@ namespace Zodiacon.HexEditControl.Commands {
             HexEdit.InputIndex = _inputIndex;
             HexEdit.WordIndex = _wordIndex;
             if (_inputIndex == 1 && _wordIndex == _wordSize - 1) {
-                HexEdit.CaretOffset += _wordSize;
+                HexEdit.CaretOffset = _offset + _wordSize;
             }
 
             Invalidate();
@@ -52,7 +52,7 @@ namespace Zodiacon.HexEditControl.Commands {
             HexEdit.InputIndex = _inputIndex;
             HexEdit.WordIndex = _wordIndex;
             if (_inputIndex == 1 && _wordIndex == _wordSize - 1)
-                HexEdit.CaretOffset -= _wordSize;
+                HexEdit.CaretOffset = _offset;
 
             Invalidate();
         }

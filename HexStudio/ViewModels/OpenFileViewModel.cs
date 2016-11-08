@@ -48,6 +48,7 @@ namespace HexStudio.ViewModels {
 		public void OpenFile(string filename) {
 			_editor.OpenFile(filename);
 			FileName = filename;
+            _editor.Buffer.SizeChanged += _editor_SizeChanged;
             OnPropertyChanged(nameof(Size));
 		}
 
@@ -121,10 +122,15 @@ namespace HexStudio.ViewModels {
 		HexEdit _editor;
 		internal void SetHexEdit(HexEdit hexEdit) {
 			_editor = hexEdit;
-			Ready?.Invoke(this, EventArgs.Empty);
+            _editor.Buffer.SizeChanged += _editor_SizeChanged;
+            Ready?.Invoke(this, EventArgs.Empty);
 		}
 
-		public void Dispose() {
+        private void _editor_SizeChanged(long oldSize, long newSize) {
+            OnPropertyChanged(nameof(Size));
+        }
+
+        public void Dispose() {
 			_editor.Dispose();
 		}
 

@@ -6,6 +6,7 @@
              xmlns:local="clr-namespace:HexStudio.Views"
              xmlns:metro="http://metro.mahapps.com/winfx/xaml/controls"
              xmlns:vm="clr-namespace:HexStudio.ViewModels"
+             xmlns:conv="clr-namespace:HexStudio.Converters"
              xmlns:z="http://zodiacon.wpf/2016"
              xmlns:root="clr-namespace:HexStudio"
              mc:Ignorable="d" x:Name="This"
@@ -18,6 +19,7 @@
         <DataTemplate x:Key="FileViewKey" >
             <local:OpenFileView />
         </DataTemplate>
+        <conv:OverwriteToTextConverter x:Key="overwriteConverter" />
     </UserControl.Resources>
     <Grid>
         <Grid.RowDefinitions>
@@ -106,6 +108,9 @@
         <StatusBar Grid.Row="3">
             <TextBlock Text="{Binding SelectedFile.FileName}" />
             <TextBlock Text="{Binding SelectedFile.Size, StringFormat=(\{0\} bytes)}" Margin="4,0,0,0"/>
+            <StatusBarItem HorizontalAlignment="Right">
+                <TextBlock Text="{Binding SelectedFile.OverwriteMode, Converter={StaticResource overwriteConverter}}" />
+            </StatusBarItem>
         </StatusBar>
     </Grid>
 </UserControl>

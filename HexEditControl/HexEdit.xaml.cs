@@ -433,9 +433,6 @@ namespace Zodiacon.HexEditControl {
 			byte value = e.Key >= Key.A ? (byte)(e.Key - Key.A + 10) : (byte)(e.Key - Key.D0);
 			_lastValue = (byte)(_lastValue * 16 + value);
 
-			if (!IsModified)
-				IsModified = true;
-
             var overwrite = OverwriteMode;
             if (_currentChange == null) {
 				// create a new change set
@@ -474,10 +471,12 @@ namespace Zodiacon.HexEditControl {
                     WordIndex = 0;
                 }
             }
-			//InvalidateVisual();
-		}
+            //InvalidateVisual();
 
-		private void ClearSelection() {
+            IsModified = _commandManager.CanUndo;
+        }
+
+        private void ClearSelection() {
 			SelectionStart = SelectionEnd = -1;
 		}
 
@@ -551,6 +550,7 @@ namespace Zodiacon.HexEditControl {
 		public void SaveChanges() {
 			_hexBuffer.ApplyChanges();
 			ClearChange();
+            _commandManager.Clear();
 			IsModified = false;
 			InvalidateVisual();
 		}
@@ -565,13 +565,15 @@ namespace Zodiacon.HexEditControl {
 		public void SaveChangesAs(string newfilename) {
 			_hexBuffer.SaveToFile(newfilename);
 			ClearChange();
-			IsModified = false;
+            _commandManager.Clear();
+            IsModified = false;
 			InvalidateVisual();
 		}
 
 		public void DiscardChanges() {
 			_hexBuffer.DiscardChanges();
-			IsModified = false;
+            _commandManager.Clear();
+            IsModified = false;
 			InvalidateVisual();
 		}
 
