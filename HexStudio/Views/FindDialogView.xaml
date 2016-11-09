@@ -8,7 +8,7 @@
         xmlns:local="clr-namespace:HexStudio.Views"
         mc:Ignorable="d" 
         >
-    <Grid>
+    <Grid Margin="8">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="8" />
@@ -23,10 +23,11 @@
             <ColumnDefinition Width="6" />
             <ColumnDefinition />
         </Grid.ColumnDefinitions>
-        <RadioButton Content="Bytes:" IsChecked="{Binding IsBytesSearch}" />
-        <c:HexEdit Grid.Column="2" Height="30" />
+        <RadioButton Content="Bytes:" IsChecked="{Binding IsBytesSearch}" VerticalAlignment="Center" />
+        <c:HexEdit Grid.Column="2" BytesPerLine="32" MinWidth="300" ShowOffset="False" BorderThickness="1" BorderBrush="{DynamicResource BlackBrush}" 
+                   OverwriteMode="True" Height="80"/>
 
-        <RadioButton Grid.Row="2" Content="String:" IsChecked="{Binding IsStringSearch}"/>
-        <TextBox Grid.Row="2" Grid.Column="2" Text="{Binding SearchString}" />
+        <RadioButton Grid.Row="2" Content="String:" IsChecked="{Binding IsStringSearch}" VerticalAlignment="Center"/>
+        <TextBox Grid.Row="2" Grid.Column="2" Text="{Binding SearchString}" MinWidth="100"/>
     </Grid>
 </UserControl>

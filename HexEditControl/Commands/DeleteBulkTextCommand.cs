@@ -16,12 +16,14 @@ namespace Zodiacon.HexEditControl.Commands {
 
         public override void Execute() {
             HexEdit.Buffer.Delete(_byteRange.Range);
+			HexEdit.CaretOffset = _byteRange.Start;
             Invalidate();
         }
 
         public override void Undo() {
             HexEdit.Buffer.Insert(_byteRange);
-            Invalidate();
+			HexEdit.CaretOffset = _byteRange.End + 1;
+			Invalidate();
         }
     }
 }

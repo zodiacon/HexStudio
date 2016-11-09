@@ -34,17 +34,18 @@ namespace Zodiacon.HexEditControl {
         public HexEdit() {
             InitializeComponent();
 
-            _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(.5) };
-            _timer.Tick += _timer_Tick;
-            _timer.Start();
+			_timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(.5) };
+			// create new document by default
+			CreateNew();
 
-            // create new document by default
-            CreateNew();
-
-            Loaded += delegate {
-                UpdateCaretWidth();
+			Loaded += delegate {
                 _root.Focus();
-            };
+
+			   _timer.Tick += _timer_Tick;
+			   _timer.Start();
+				SetCaretPosition(CaretOffset);
+				UpdateCaretWidth();
+			};
         }
 
         static HexEdit() {
@@ -85,10 +86,11 @@ namespace Zodiacon.HexEditControl {
 
             _hexBuffer = new ByteBuffer(0, _sizeLimit = sizeLimit);
             _hexBuffer.SizeChanged += _hexBuffer_SizeChanged;
+			CaretOffset = 0;
         }
 
         private void _hexBuffer_SizeChanged(long oldSize, long newSize) {
-            if (Math.Abs(oldSize - newSize) > BytesPerLine) {
+            if (Math.Abs(oldSize - newSize) > BytesPerLine || newSize % BytesPerLine == 0) {
                 Recalculate();
             }
         }
@@ -110,7 +112,7 @@ namespace Zodiacon.HexEditControl {
 
         private void Recalculate() {
             _scroll.ViewportSize = ActualHeight;
-            _scroll.Maximum = _hexBuffer.Size / BytesPerLine * (FontSize + VerticalSpace) - ActualHeight + VerticalSpace * 2;
+            _scroll.Maximum = (_hexBuffer.Size / BytesPerLine + 1) * (FontSize + VerticalSpace) - ActualHeight + VerticalSpace * 2;
         }
 
         private void _scroll_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e) {
@@ -143,15 +145,17 @@ namespace Zodiacon.HexEditControl {
             var maxWidth = 0.0;
             bool empty = _hexBuffer.Size == 0;
 
-            for (long i = start; i < end || empty; i += BytesPerLine) {
-                var pos = 2 + (i / BytesPerLine) * lineHeight + y;
-                var text = new FormattedText(i.ToString("X8") + ": ", CultureInfo.InvariantCulture, FlowDirection.LeftToRight, typeface, FontSize, Foreground);
-                if (text.Width > maxWidth)
-                    maxWidth = text.Width;
-                dc.DrawText(text, new Point(2, pos));
-                if (empty)
-                    break;
-            }
+			if (ShowOffset) {
+				for (long i = start; i < end || empty; i += BytesPerLine) {
+					var pos = 2 + (i / BytesPerLine) * lineHeight + y;
+					var text = new FormattedText(i.ToString("X8") + ": ", CultureInfo.InvariantCulture, FlowDirection.LeftToRight, typeface, FontSize, Foreground);
+					if (text.Width > maxWidth)
+						maxWidth = text.Width;
+					dc.DrawText(text, new Point(2, pos));
+					if (empty)
+						break;
+				}
+			}
 
             var x = maxWidth + 8;
 
@@ -543,7 +547,11 @@ namespace Zodiacon.HexEditControl {
             _root.Focus();
         }
 
-        public void SaveChangesAs(string newfilename) {
+		private void _root_GotKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e) {
+			_caret.Visibility = Visibility.Visible;
+		}
+
+		public void SaveChangesAs(string newfilename) {
             _hexBuffer.SaveToFile(newfilename);
             ClearChange();
             _commandManager.Clear();

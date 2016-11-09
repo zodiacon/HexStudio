@@ -66,8 +66,8 @@
     <Reference Include="WindowsBase" />
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
-    <Reference Include="Zodiacon.WPF, Version=1.1.6146.26150, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Zodiacon.WPF.1.1.8\lib\net45\Zodiacon.WPF.dll</HintPath>
+    <Reference Include="Zodiacon.WPF, Version=1.1.6157.17242, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Zodiacon.WPF.1.1.9\lib\net45\Zodiacon.WPF.dll</HintPath>
       <Private>True</Private>
     </Reference>
   </ItemGroup>
@@ -88,6 +88,9 @@
     <Compile Include="Views\FindDialogView.xaml.cs">
       <DependentUpon>FindDialogView.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Views\GenericWindow.xaml.cs">
+      <DependentUpon>GenericWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Views\MainView.xaml.cs">
       <DependentUpon>MainView.xaml</DependentUpon>
     </Compile>
@@ -106,7 +109,15 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Page Include="Resources\Templates.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Views\FindDialogView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Views\GenericWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

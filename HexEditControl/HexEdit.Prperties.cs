@@ -30,7 +30,7 @@ namespace Zodiacon.HexEditControl {
         }
 
 		void UpdateCaretWidth() {
-			_caret.Width = OverwriteMode ? _charWidth : SystemParameters.CaretWidth;
+			_caret.Width = OverwriteMode ? (_charWidth < 1 ? 8 : _charWidth) : SystemParameters.CaretWidth;
 		}
 
 		public long SelectionLength => SelectionStart < 0 ? 0 : SelectionEnd - SelectionStart + WordSize;
@@ -160,6 +160,17 @@ namespace Zodiacon.HexEditControl {
 
 		public static readonly DependencyProperty IsModifiedProperty =
 			 DependencyProperty.Register(nameof(IsModified), typeof(bool), typeof(HexEdit), new PropertyMetadata(false));
+
+
+
+		public bool ShowOffset {
+			get { return (bool)GetValue(ShowOffsetProperty); }
+			set { SetValue(ShowOffsetProperty, value); }
+		}
+
+		public static readonly DependencyProperty ShowOffsetProperty =
+			DependencyProperty.Register(nameof(ShowOffset), typeof(bool), typeof(HexEdit), 
+				new PropertyMetadata(true, (s, e) => ((HexEdit)s).Refresh()));
 
 
 		private static bool ValidateWordSize(object value) {

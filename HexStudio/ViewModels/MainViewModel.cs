@@ -1,4 +1,5 @@
-﻿using Prism.Commands;
+﻿using HexStudio.Views;
+using Prism.Commands;
 using Prism.Mvvm;
 using System;
 using System.Collections.Generic;
@@ -175,7 +176,7 @@ namespace HexStudio.ViewModels {
 
 		public ICommand FindCommand => new DelegateCommand(() => {
 			// find dialog
-			var vm = DialogService.CreateDialog<FindDialogViewModel, Window>();
+			var vm = DialogService.CreateDialog<FindDialogViewModel, GenericWindow>();
 			if (true == vm.ShowDialog()) {
 			}
 		}, () => SelectedFile != null).ObservesProperty(() => SelectedFile);

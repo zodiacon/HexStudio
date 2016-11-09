@@ -12,7 +12,7 @@ namespace HexStudio.ViewModels {
 
 		}
 
+		public double MaxWidth => 600;
 		public string Title => "Find";
-		public bool TitleCaps => false; 
 	}
 }

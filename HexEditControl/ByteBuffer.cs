@@ -296,7 +296,7 @@ namespace Zodiacon.HexEditControl
             }
 
             var ranges = _dataRanges.Values;
-            for (i = ranges.Count - 1; i >= 0; --i) {
+            for (i = ranges.Count - 1; i >= 0 && i < ranges.Count; --i) {
                 var dr = ranges[i];
                 if (dr.Range.ContainsEntirely(range)) {
                     // split dr into two ranges
@@ -324,7 +324,17 @@ namespace Zodiacon.HexEditControl
                     OnSizeChanged(Size + range.Count);
                     break;
                 }
-                if (dr.Range.Intersects(range)) {
+				if (range.ContainsEntirely(dr.Range)) {			
+					_dataRanges.RemoveAt(i);
+					for (int j = i; j < _dataRanges.Count; j++) {
+						var r = _dataRanges.Values[j];
+						_dataRanges.RemoveAt(j);
+						r.Shift(-dr.Count);
+						_dataRanges.Add(r.Start, r);
+					}
+					continue;
+				}
+				if (dr.Range.Intersects(range)) {
                     // complex overlap
                     var right = i < ranges.Count - 1 ? ranges[i + 1] : null;
                     var left = i > 0 ? ranges[i - 1] : null;
@@ -342,17 +352,15 @@ namespace Zodiacon.HexEditControl
                     }
                     if (right != null) {
                         _dataRanges.Remove(right.Start);
-                        right = right.GetSubRange(Range.FromStartToEnd(range.Start, right.End));
+                        right = right.GetSubRange(Range.FromStartToEnd(right.Start, range.End));
                     }
 
-                    if (left != null && !left.IsEmpty) {
+                    if (!left.IsEmpty) {
                         _dataRanges.Add(left.Start, left);
                     }
-                    if (right != null && !right.IsEmpty) {
+                    if (!right.IsEmpty) {
                         _dataRanges.Add(right.Start, right);
                     }
-
-                    break;
                 }
             }
         }

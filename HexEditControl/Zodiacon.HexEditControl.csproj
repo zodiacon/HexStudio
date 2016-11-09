@@ -51,8 +51,8 @@
     <Reference Include="WindowsBase" />
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
-    <Reference Include="Zodiacon.WPF, Version=1.1.6146.26150, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Zodiacon.WPF.1.1.8\lib\net45\Zodiacon.WPF.dll</HintPath>
+    <Reference Include="Zodiacon.WPF, Version=1.1.6157.17242, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Zodiacon.WPF.1.1.9\lib\net45\Zodiacon.WPF.dll</HintPath>
       <Private>True</Private>
     </Reference>
   </ItemGroup>

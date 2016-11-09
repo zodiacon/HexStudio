@@ -8,7 +8,7 @@
              KeyDown="Grid_KeyDown"  >
     <Grid Background="Transparent" MouseWheel="Grid_MouseWheel" MouseMove="Grid_MouseMove" MouseLeftButtonDown="_scroll_MouseLeftButtonDown" 
           MouseLeftButtonUp="Grid_MouseLeftButtonUp" x:Name="_root" MouseRightButtonDown="_root_MouseRightButtonDown"
-          Focusable="True">
+          Focusable="True" GotKeyboardFocus="_root_GotKeyboardFocus">
         <Grid.FocusVisualStyle>
             <Style >
                 <Setter Property="Control.Template">
