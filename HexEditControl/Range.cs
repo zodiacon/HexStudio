@@ -44,7 +44,7 @@ namespace Zodiacon.HexEditControl {
 
 		public Range GetIntersection(Range other) {
 			if (!Intersects(other))
-				return new Range();
+				return new Range(0, -1);
 
 			long start, end;
 
