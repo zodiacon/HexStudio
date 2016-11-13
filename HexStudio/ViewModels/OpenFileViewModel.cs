@@ -141,6 +141,8 @@ namespace HexStudio.ViewModels {
             }
         }
 
+		public IHexEdit HexEditor => _editor;
+
         HexEdit _editor;
         internal void SetHexEdit(HexEdit hexEdit) {
             _editor = hexEdit;

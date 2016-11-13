@@ -22,6 +22,7 @@ namespace HexStudio.ViewModels {
 		ObservableCollection<OpenFileViewModel> _openFiles = new ObservableCollection<OpenFileViewModel>();
 		ObservableCollection<string> _recentFiles = new ObservableCollection<string>();
 		Settings _settings;
+		FindDialogViewModel _findDialogViewModel;
 
 		public Settings Settings => _settings;
 
@@ -38,6 +39,40 @@ namespace HexStudio.ViewModels {
 
 		public MainViewModel() {
 			LoadSettings();
+
+			FindCommand = new DelegateCommand(() => {
+				// find dialog
+				_findDialogViewModel = _findDialogViewModel != null ? 
+					DialogService.CreateDialog<FindDialogViewModel, GenericWindow>(_findDialogViewModel) : 
+					DialogService.CreateDialog<FindDialogViewModel, GenericWindow>();
+				if (true == _findDialogViewModel.ShowDialog()) {
+					Find(_findDialogViewModel);
+				}
+			}, () => SelectedFile != null).ObservesProperty(() => SelectedFile);
+		}
+
+		private void Find(FindDialogViewModel vm) {
+			byte[] bytes;
+			if (vm.IsBytesSearch)
+				bytes = vm.HexEdit.GetBytes(0, (int)vm.HexEdit.Size);
+			else {
+				Encoding encoding;
+				if (vm.IsAscii)
+					encoding = Encoding.ASCII;
+				else if (vm.IsUTF8)
+					encoding = Encoding.UTF8;
+				else
+					encoding = Encoding.Unicode;
+				bytes = encoding.GetBytes(vm.SearchString);
+			}
+
+			// initiate search
+
+			var editors = vm.IsSearchFile ? Enumerable.Range(0, 1).Select(_ => SelectedFile.HexEditor) : OpenFiles.Select(file => file.HexEditor);
+			var finder = new ByteFinder(editors, bytes, ByteFinderOptions.FromStart);
+			foreach (var find in finder.Find()) {
+				Debug.WriteLine($"Found sequence at offset {find.Offset}");
+			}
 		}
 
 		public bool QueryCloseAll() {
@@ -174,11 +209,6 @@ namespace HexStudio.ViewModels {
 
 		public bool IsSelectedFile => SelectedFile != null;
 
-		public ICommand FindCommand => new DelegateCommand(() => {
-			// find dialog
-			var vm = DialogService.CreateDialog<FindDialogViewModel, GenericWindow>();
-			if (true == vm.ShowDialog()) {
-			}
-		}, () => SelectedFile != null).ObservesProperty(() => SelectedFile);
+		public ICommand FindCommand { get; }
 	}
 }

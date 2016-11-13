@@ -5,10 +5,11 @@
         xmlns:metro="http://metro.mahapps.com/winfx/xaml/controls"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:HexStudio.Views"
-        mc:Ignorable="d"
-        Title="{Binding Title}" MinHeight="{Binding MinHeight}" MinWidth="{Binding MinWidth}"
-                   BorderThickness="1" BorderBrush="{DynamicResource AccentColorBrush}"
-                   TitleCaps="False" Icon="{Binding Icon}" ResizeMode="{Binding ResizeMode}"
-                   SaveWindowPosition="True"
-                   >
+        mc:Ignorable="d" Title="{Binding Title}" 
+        MinHeight="{Binding MinHeight}" MinWidth="{Binding MinWidth}"
+        BorderThickness="1" BorderBrush="{DynamicResource AccentColorBrush}"
+        SizeToContent="{Binding SizeToContent}"
+        TitleCaps="False" Icon="{Binding Icon}" ResizeMode="{Binding ResizeMode}"
+        Width="{Binding Width}" Height="{Binding Height}"
+        >
 </metro:MetroWindow>

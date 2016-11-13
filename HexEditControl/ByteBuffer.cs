@@ -9,7 +9,6 @@ namespace Zodiacon.HexEditControl {
 	public sealed class ByteBuffer : IDisposable {
 		MemoryMappedViewAccessor _accessor;
 		MemoryMappedFile _memFile;
-		byte[] _byteBuffer;
 		string _filename;
 		SortedList<long, DataRange> _dataRanges = new SortedList<long, DataRange>(64);
 
@@ -41,9 +40,18 @@ namespace Zodiacon.HexEditControl {
 			Size = size;
 		}
 
+		public void SetData(byte[] data, long limit = 1 << 20) {
+			Dispose();
+			_memFile = MemoryMappedFile.CreateNew(null, limit);
+			_accessor = _memFile.CreateViewAccessor();
+			Size = data.Length;
+			_dataRanges.Clear();
+			_accessor.WriteArray(0, data, 0, data.Length);
+			_dataRanges.Add(0, new FileRange(Range.FromStartAndCount(0, data.Length), 0, _accessor));
+		}
+
 		public ByteBuffer(byte[] buffer) {
-			_byteBuffer = buffer;
-			Size = buffer.LongLength;
+			SetData(buffer);
 		}
 
 		public void ApplyChanges() {
@@ -75,11 +83,13 @@ namespace Zodiacon.HexEditControl {
 		public IEnumerable<DataRange> DataRanges => _dataRanges.Select(item => item.Value);
 
 		public void DiscardChanges() {
-			var oldSize = Size;
-			Size = new FileInfo(_filename).Length;
-			_dataRanges.Clear();
-			_dataRanges.Add(0, new FileRange(Range.FromStartAndCount(0, Size), 0, _accessor));
-			OnSizeChanged(oldSize);
+			if (_filename != null) {
+				_dataRanges.Clear();
+				var oldSize = Size;
+				Size = new FileInfo(_filename).Length;
+				OnSizeChanged(oldSize);
+				_dataRanges.Add(0, new FileRange(Range.FromStartAndCount(0, Size), 0, _accessor));
+			}
 		}
 
 		public void Dispose() {
@@ -98,9 +108,8 @@ namespace Zodiacon.HexEditControl {
 			if (string.IsNullOrEmpty(_filename)) {
 				// new file, just get everything out
 
-				byte[] bytes = _byteBuffer ?? new byte[Size];
-				if (_byteBuffer == null)
-					GetBytes(0, (int)Size, bytes);
+				byte[] bytes = new byte[Size];
+				GetBytes(0, (int)Size, bytes);
 				File.WriteAllBytes(filename, bytes);
 				Open(filename);
 			}

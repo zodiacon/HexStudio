@@ -161,8 +161,6 @@ namespace Zodiacon.HexEditControl {
 		public static readonly DependencyProperty IsModifiedProperty =
 			 DependencyProperty.Register(nameof(IsModified), typeof(bool), typeof(HexEdit), new PropertyMetadata(false));
 
-
-
 		public bool ShowOffset {
 			get { return (bool)GetValue(ShowOffsetProperty); }
 			set { SetValue(ShowOffsetProperty, value); }
@@ -191,5 +189,17 @@ namespace Zodiacon.HexEditControl {
 			InvalidateVisual();
 		}
 
+		public static readonly DependencyProperty DataProperty =
+			DependencyProperty.Register(nameof(Data), typeof(IHexEdit), typeof(HexEdit), new FrameworkPropertyMetadata(null));
+
+		public IHexEdit Data {
+			get { return (IHexEdit)GetValue(DataProperty); }
+			set { throw new InvalidOperationException(); }
+		}
+
+		public event Action<long, long> BufferSizeChanged {
+			add { Buffer.SizeChanged += value; }
+			remove { Buffer.SizeChanged -= value; }
+		}
 	}
 }
