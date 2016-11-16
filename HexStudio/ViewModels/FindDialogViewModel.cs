@@ -12,16 +12,46 @@ using Zodiacon.WPF;
 
 namespace HexStudio.ViewModels {
 	sealed class FindDialogViewModel : DialogViewModelBase {
-		public FindDialogViewModel(Window dialog) : base(dialog) {
-			CanExecuteOKCommand = () => IsStringSearch && !string.IsNullOrEmpty(SearchString) || IsBytesSearch && HexEdit?.Size > 0;
-			OKCommand.ObservesProperty(() => IsStringSearch).ObservesProperty(() => IsBytesSearch).ObservesProperty(() => SearchString);
+		MainViewModel _mainViewModel;
+		ByteFinder _finder;
+
+		public FindDialogViewModel(Window dialog, MainViewModel mainViewModel) : base(dialog) {
+			_mainViewModel = mainViewModel;
+
+			SearchCommand = new DelegateCommand(() => {
+				byte[] bytes;
+				if (IsBytesSearch)
+					bytes = HexEdit.GetBytes(0, (int)HexEdit.Size);
+				else {
+					Encoding encoding;
+					if (IsAscii)
+						encoding = Encoding.ASCII;
+					else if (IsUTF8)
+						encoding = Encoding.UTF8;
+					else
+						encoding = Encoding.Unicode;
+					bytes = encoding.GetBytes(SearchString);
+				}
+
+				// initiate search
+
+				var files = IsSearchFile ? Enumerable.Range(0, 1).Select(_ => _mainViewModel.SelectedFile) : _mainViewModel.OpenFiles;
+				_finder = new ByteFinder(files, bytes, ByteFinderOptions.FromStart);
+				OnPropertyChanged(nameof(FindResults));
+
+			}, () => IsStringSearch && !string.IsNullOrEmpty(SearchString) || IsBytesSearch && HexEdit?.Size > 0)
+				.ObservesProperty(() => IsStringSearch).ObservesProperty(() => IsBytesSearch).ObservesProperty(() => SearchString);
 		}
+
+		public IEnumerable<FindResultViewModel> FindResults => _finder?.Find();
 
 		public double Width => 650.0;
 		public SizeToContent SizeToContent => SizeToContent.WidthAndHeight;
 		public string Title => "Find";
 		public string Icon => "/icons/find.ico";
-		public ResizeMode ResizeMode => ResizeMode.NoResize;
+		public ResizeMode ResizeMode => ResizeMode.CanMinimize;
+
+		public DelegateCommandBase SearchCommand { get; }
 
 		private bool _isBytesSearch = true;
 
@@ -70,7 +100,7 @@ namespace HexStudio.ViewModels {
 			get { return _hexEdit; }
 			set {
 				_hexEdit = value;
-				_hexEdit.BufferSizeChanged += delegate { OKCommand.RaiseCanExecuteChanged(); };
+				_hexEdit.BufferSizeChanged += delegate { SearchCommand.RaiseCanExecuteChanged(); };
 				if (_data != null)
 					_hexEdit.SetData(_data);
 			}

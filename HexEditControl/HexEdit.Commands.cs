@@ -14,7 +14,7 @@ namespace Zodiacon.HexEditControl {
 			CommandManager.RegisterClassCommandBinding(typeof(HexEdit), new CommandBinding(ApplicationCommands.Copy,
 				(s, e) => ((HexEdit)s).ExecuteCopy(e), (s, e) => ((HexEdit)s).CanExecuteCopy(e)));
 			CommandManager.RegisterClassCommandBinding(typeof(HexEdit), new CommandBinding(ApplicationCommands.Paste,
-				(s, e) => ((HexEdit)s).ExecutePaste(e), (s, e) => ((HexEdit)s).CanExecuteCut(e)));
+				(s, e) => ((HexEdit)s).ExecutePaste(e), (s, e) => ((HexEdit)s).CanExecutePaste(e)));
 			CommandManager.RegisterClassCommandBinding(typeof(HexEdit), new CommandBinding(ApplicationCommands.Cut,
 				(s, e) => ((HexEdit)s).ExecuteCut(e), (s, e) => ((HexEdit)s).CanExecuteCut(e)));
 			CommandManager.RegisterClassCommandBinding(typeof(HexEdit), new CommandBinding(ApplicationCommands.Undo,
@@ -25,7 +25,11 @@ namespace Zodiacon.HexEditControl {
                 (s, e) => ((HexEdit)s).ExecuteDelete(e), (s, e) => ((HexEdit)s).CanExecuteDelete(e)));
         }
 
-        private void CanExecuteDelete(CanExecuteRoutedEventArgs e) {
+		private void CanExecutePaste(CanExecuteRoutedEventArgs e) {
+			e.CanExecute = Clipboard.ContainsData(DataFormats.Serializable);
+		}
+
+		private void CanExecuteDelete(CanExecuteRoutedEventArgs e) {
             e.CanExecute = !IsReadOnly && (SelectionLength > 0 || CaretOffset < _hexBuffer.Size - WordSize);
         }
 

@@ -27,23 +27,39 @@
         </Grid.ColumnDefinitions>
         <RadioButton Content="Bytes:" IsChecked="{Binding IsBytesSearch}" VerticalAlignment="Center" />
         <c:HexEdit Grid.Column="2" BytesPerLine="16" MinWidth="450" ShowOffset="False" BorderThickness="1" BorderBrush="{DynamicResource BlackBrush}" 
-                   OverwriteMode="False" Height="80" Data="{Binding HexEdit, Mode=OneWayToSource}"/>
+                   OverwriteMode="False" Height="60" Data="{Binding HexEdit, Mode=OneWayToSource}"/>
 
         <RadioButton Grid.Row="2" Content="String:" IsChecked="{Binding IsStringSearch}" VerticalAlignment="Center"/>
         <DockPanel Grid.Row="2" Grid.Column="2">
             <RadioButton DockPanel.Dock="Right" Content="UTF-16" IsChecked="{Binding IsUTF16}" Margin="4,0,0,0" />
             <RadioButton DockPanel.Dock="Right" Content="UTF-8" IsChecked="{Binding IsUTF8}" Margin="4,0,0,0" />
             <RadioButton DockPanel.Dock="Right" Content="ASCII" IsChecked="{Binding IsAscii}" Margin="4,0,0,0" />
-            <TextBox Text="{Binding SearchString, UpdateSourceTrigger=PropertyChanged}" MinWidth="120" Height="50" AcceptsReturn="True"/>
+            <TextBox Text="{Binding SearchString, UpdateSourceTrigger=PropertyChanged}" MinWidth="120" 
+                     metro:TextBoxHelper.ClearTextButton="True" metro:TextBoxHelper.SelectAllOnFocus="True"/>
         </DockPanel>
 
         <TextBlock Grid.Row="4" Text="Search in:" VerticalAlignment="Center"/>
         <StackPanel Orientation="Horizontal" Grid.Row="4" Grid.Column="2" >
-            <RadioButton Content="Selection" IsChecked="{Binding IsSearchSelection}" />
+            <CheckBox Content="Selection" IsChecked="{Binding IsSearchSelection}" />
             <RadioButton Content="Current File" Margin="8,0,0,0" IsChecked="{Binding IsSearchFile}" />
             <RadioButton Content="All Open Files" Margin="8,0,0,0" IsChecked="{Binding IsSearchAllFiles}" />
-            <Button Grid.Row="6" IsDefault="True" Content="_Search" Padding="15,0" Command="{Binding OKCommand}" Margin="16,0,0,0" x:Name="_ok"/>
-            <Button Content="Cancel" IsCancel="True" Command="{Binding CancelCommand}" Margin="8,0" Width="{Binding ActualWidth, ElementName=_ok}"/>
+            <Button Grid.Row="6" IsDefault="True" Content="_Search" Padding="15,0" Command="{Binding SearchCommand}" Margin="16,0,0,0" x:Name="_ok"/>
+            <Button Content="Close" IsCancel="True" Command="{Binding CancelCommand}" Margin="8,0" Width="{Binding ActualWidth, ElementName=_ok}"/>
         </StackPanel>
+
+        <DataGrid Margin="0,4,0,0" Grid.Row="6" Grid.ColumnSpan="3" IsReadOnly="True" AutoGenerateColumns="False" SelectionMode="Single" ItemsSource="{Binding FindResults}"
+                  MaxHeight="300" >
+            <DataGrid.Resources>
+                <Style TargetType="TextBlock" x:Key="RightJustifyTextBlock">
+                    <Setter Property="TextAlignment" Value="Right" />
+                </Style>
+            </DataGrid.Resources>
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Title" Binding="{Binding OpenFile.Title}" />
+                <DataGridTextColumn Header="Offset" Binding="{Binding Offset}" FontWeight="Bold" ElementStyle="{StaticResource RightJustifyTextBlock}"/>
+                <DataGridTextColumn Header="File" Binding="{Binding OpenFile.FileName}" />
+            </DataGrid.Columns>
+        </DataGrid>
+
     </Grid>
 </UserControl>
