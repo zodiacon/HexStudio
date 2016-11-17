@@ -38,6 +38,7 @@ namespace Zodiacon.HexEditControl {
 			InitializeComponent();
 
 			_timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(.5) };
+
 			// create new document by default
 			CreateNew();
 
@@ -411,7 +412,7 @@ namespace Zodiacon.HexEditControl {
 				ClearChange();
 			}
 			_root.Focus();
-
+			Keyboard.Focus(this);
 		}
 
 		void ClearChange() {

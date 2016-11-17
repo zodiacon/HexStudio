@@ -73,10 +73,10 @@
                 <MenuItem Header="_Always On Top" IsCheckable="True" IsChecked="{Binding Settings.IsAlwaysOnTop}" />
             </MenuItem>
         </Menu>
-        <StackPanel Margin="0,4,0,0" Orientation="Horizontal" Grid.Row="1" FocusManager.IsFocusScope="True">
+        <StackPanel Margin="0,4" Orientation="Horizontal" Grid.Row="1" FocusManager.IsFocusScope="True">
             <StackPanel.Resources>
                 <Style TargetType="Button" BasedOn="{StaticResource MetroButton}">
-                    <Setter Property="Margin" Value="2,0" />
+                    <Setter Property="BorderThickness" Value="0" />
                 </Style>
                 <Style TargetType="Image">
                     <Setter Property="Width" Value="20" />
@@ -98,8 +98,7 @@
             <Button Command="Paste" ToolTip="Paste">
                 <Image Source="/icons/paste.ico" />
             </Button>
-            <ToggleButton IsChecked="{Binding SelectedFile.OverwriteMode}" ToolTip="Overwrite / Insert" Content="OVR" IsEnabled="{Binding IsSelectedFile}">
-            </ToggleButton>
+            <ToggleButton IsChecked="{Binding SelectedFile.OverwriteMode}" ToolTip="Overwrite / Insert" Content="OVR" IsEnabled="{Binding IsSelectedFile}" />
         </StackPanel>
         <TabControl Grid.Row="2" ItemsSource="{Binding OpenFiles}" SelectedItem="{Binding SelectedFile, Mode=TwoWay}" 
                     root:TabControlProperties.IsCached="True" root:TabControlProperties.Template="{StaticResource FileViewKey}" 

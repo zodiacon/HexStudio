@@ -41,6 +41,11 @@ namespace HexStudio.ViewModels {
 
 			}, () => IsStringSearch && !string.IsNullOrEmpty(SearchString) || IsBytesSearch && HexEdit?.Size > 0)
 				.ObservesProperty(() => IsStringSearch).ObservesProperty(() => IsBytesSearch).ObservesProperty(() => SearchString);
+
+			GoToFindLocationCommand = new DelegateCommand<FindResultViewModel>(result => {
+				_mainViewModel.SelectedFile = result.OpenFile;
+				result.Editor.CaretOffset = result.Offset;
+			}, result => result != null);
 		}
 
 		public IEnumerable<FindResultViewModel> FindResults => _finder?.Find();
@@ -52,6 +57,7 @@ namespace HexStudio.ViewModels {
 		public ResizeMode ResizeMode => ResizeMode.CanMinimize;
 
 		public DelegateCommandBase SearchCommand { get; }
+		public DelegateCommandBase GoToFindLocationCommand { get; }
 
 		private bool _isBytesSearch = true;
 
