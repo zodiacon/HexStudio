@@ -111,6 +111,7 @@ namespace Zodiacon.HexEditControl {
 
 			_sizeLimit = 0;
 			_hexBuffer = new ByteBuffer(filename);
+			IsReadOnly = _hexBuffer.IsReadOnly;
 			_hexBuffer.SizeChanged += _hexBuffer_SizeChanged;
 			Refresh();
 		}
@@ -376,6 +377,9 @@ namespace Zodiacon.HexEditControl {
 					break;
 
 				case Key.Back:
+					if (IsReadOnly)
+						break;
+
 					if (CaretOffset < WordSize)
 						break;
 					CaretOffset -= WordSize;
@@ -412,7 +416,7 @@ namespace Zodiacon.HexEditControl {
 				ClearChange();
 			}
 			_root.Focus();
-			Keyboard.Focus(this);
+			Keyboard.Focus(_root);
 		}
 
 		void ClearChange() {

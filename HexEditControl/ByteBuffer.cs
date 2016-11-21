@@ -16,6 +16,8 @@ namespace Zodiacon.HexEditControl {
 
 		public event Action<long, long> SizeChanged;
 
+		public bool IsReadOnly { get; private set; }
+
 		void OnSizeChanged(long oldSize) {
 			SizeChanged?.Invoke(oldSize, Size);
 		}
@@ -27,8 +29,14 @@ namespace Zodiacon.HexEditControl {
 		void Open(string filename) {
 			_filename = filename;
 			Size = new FileInfo(filename).Length;
-			_memFile = MemoryMappedFile.CreateFromFile(filename);
-			_accessor = _memFile.CreateViewAccessor();
+			try {
+				_memFile = MemoryMappedFile.CreateFromFile(filename);
+			}
+			catch (UnauthorizedAccessException) {
+				_memFile = MemoryMappedFile.CreateFromFile(filename, FileMode.Open, null, 0, MemoryMappedFileAccess.Read);
+				IsReadOnly = true;
+			}
+			_accessor = _memFile.CreateViewAccessor(0, 0, IsReadOnly ? MemoryMappedFileAccess.Read : MemoryMappedFileAccess.ReadWrite);
 			_dataRanges.Clear();
 			_dataRanges.Add(0, new FileRange(Range.FromStartAndCount(0, Size), 0, _accessor));
 			OnSizeChanged(0);
