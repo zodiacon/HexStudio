@@ -460,11 +460,7 @@ namespace Zodiacon.HexEditControl {
 			}
 			if (++InputIndex == 2) {
 				InputIndex = 0;
-				//if (_wordIndex % 2 == 1)
-				//	_currentChange.SwapLastBytes(_wordIndex + 1);
-
 				if (++WordIndex == WordSize) {
-					//CaretOffset += WordSize;
 					WordIndex = 0;
 				}
 			}
@@ -590,25 +586,22 @@ namespace Zodiacon.HexEditControl {
 			return bytes;
 		}
 
-		byte[] _searchBuffer;
-
 		public long FindNext(long offset, byte[] data) {
-			if (_searchBuffer == null)
-				_searchBuffer = new byte[Math.Max(1 << 21, data.Length * 2)];
+			var buffer = new byte[Math.Max(1 << 21, data.Length * 2)];
 
 			int iSearch = 0, iData = 0;
 			for (;;) {
-				var read = Buffer.GetBytes(offset, _searchBuffer.Length, _searchBuffer);
+				var read = Buffer.GetBytes(offset, buffer.Length, buffer);
 				if (read < data.Length)
 					break;
 
 				do {
-					while (iSearch < _searchBuffer.Length && _searchBuffer[iSearch++] == data[iData]) {
+					while (iSearch < buffer.Length && buffer[iSearch++] == data[iData]) {
 						if (++iData == data.Length)
 							return offset + iSearch - data.Length;
 					}
 					iData = 0;
-				} while (iSearch < _searchBuffer.Length);
+				} while (iSearch < buffer.Length);
 
 				offset += iSearch - data.Length;
 				iSearch = 0;
@@ -620,6 +613,11 @@ namespace Zodiacon.HexEditControl {
 			Buffer.SetData(data);
 			DiscardChanges();
 			InvalidateVisual();
+		}
+
+		public long FindNext(long offset, string text, Encoding encoding) {
+			var bytes = encoding.GetBytes(text);
+			return FindNext(offset, bytes);
 		}
 	}
 }
