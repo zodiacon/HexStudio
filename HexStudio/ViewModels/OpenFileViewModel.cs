@@ -71,7 +71,7 @@ namespace HexStudio.ViewModels {
             _editor.OpenFile(filename);
             FileName = filename;
             _editor.Buffer.SizeChanged += _editor_SizeChanged;
-            OnPropertyChanged(nameof(Size));
+            RaisePropertyChanged(nameof(Size));
         }
 
         private string _filename;
@@ -80,7 +80,7 @@ namespace HexStudio.ViewModels {
             get { return _filename; }
             set {
                 if (SetProperty(ref _filename, value)) {
-                    OnPropertyChanged(nameof(Title));
+                    RaisePropertyChanged(nameof(Title));
                 }
             }
         }
@@ -98,7 +98,7 @@ namespace HexStudio.ViewModels {
 
             _editor.SaveChangesAs(filename);
             FileName = filename;
-            OnPropertyChanged(nameof(Title));
+            RaisePropertyChanged(nameof(Title));
         }
 
         public string Title => (FileName == null ? "Untitled" : Path.GetFileName(FileName)) + (IsModified ? " *" : string.Empty);
@@ -136,7 +136,7 @@ namespace HexStudio.ViewModels {
             get { return _isModified; }
             set {
                 if (SetProperty(ref _isModified, value)) {
-                    OnPropertyChanged(nameof(Title));
+                    RaisePropertyChanged(nameof(Title));
                 }
             }
         }
@@ -157,7 +157,7 @@ namespace HexStudio.ViewModels {
         }
 
         private void _editor_SizeChanged(long oldSize, long newSize) {
-            OnPropertyChanged(nameof(Size));
+            RaisePropertyChanged(nameof(Size));
         }
 
         public void Dispose() {

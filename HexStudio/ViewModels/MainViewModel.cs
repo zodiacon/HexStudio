@@ -85,7 +85,7 @@ namespace HexStudio.ViewModels {
 			get { return _selecetdFile; }
 			set {
 				if (SetProperty(ref _selecetdFile, value)) {
-					OnPropertyChanged(nameof(IsSelectedFile));
+					RaisePropertyChanged(nameof(IsSelectedFile));
 				}
 			}
 		}

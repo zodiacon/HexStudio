@@ -73,33 +73,29 @@
                 <MenuItem Header="_Always On Top" IsCheckable="True" IsChecked="{Binding Settings.IsAlwaysOnTop}" />
             </MenuItem>
         </Menu>
-        <StackPanel Margin="0,4" Orientation="Horizontal" Grid.Row="1" FocusManager.IsFocusScope="True">
-            <StackPanel.Resources>
+        <ToolBar Margin="0,4" Grid.Row="1" FocusManager.IsFocusScope="True">
+            <ToolBar.Resources>
                 <Style TargetType="Button" BasedOn="{StaticResource MetroButton}">
                     <Setter Property="BorderThickness" Value="0" />
                 </Style>
-                <Style TargetType="Image">
-                    <Setter Property="Width" Value="20" />
-                    <Setter Property="Height" Value="20" />
-                </Style>
-            </StackPanel.Resources>
+            </ToolBar.Resources>
             <Button Command="{Binding NewFileCommand}" ToolTip="New File">
-                <Image Source="/icons/file_new.ico" />
+                <Image Source="/icons/file_new.ico" Width="20" Height="20" />
             </Button>
             <Button Command="{Binding OpenFileCommand}" ToolTip="Open File">
-                <Image Source="/icons/open.ico" />
+                <Image Source="/icons/open.ico" Width="20" Height="20" />
             </Button>
             <Button Command="Copy" ToolTip="Copy" Margin="8,0,2,0">
-                <Image Source="/icons/copy.ico" />
+                <Image Source="/icons/copy.ico" Width="20" Height="20" />
             </Button>
             <Button Command="Cut" ToolTip="Cut">
-                <Image Source="/icons/cut.ico" />
+                <Image Source="/icons/cut.ico" Width="20" Height="20" />
             </Button>
             <Button Command="Paste" ToolTip="Paste">
-                <Image Source="/icons/paste.ico" />
+                <Image Source="/icons/paste.ico" Width="20" Height="20" />
             </Button>
             <ToggleButton IsChecked="{Binding SelectedFile.OverwriteMode}" ToolTip="Overwrite / Insert" Content="OVR" IsEnabled="{Binding IsSelectedFile}" />
-        </StackPanel>
+        </ToolBar>
         <TabControl Grid.Row="2" ItemsSource="{Binding OpenFiles}" SelectedItem="{Binding SelectedFile, Mode=TwoWay}" 
                     root:TabControlProperties.IsCached="True" root:TabControlProperties.Template="{StaticResource FileViewKey}" 
                                                 >

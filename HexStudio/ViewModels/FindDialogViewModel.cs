@@ -37,7 +37,7 @@ namespace HexStudio.ViewModels {
 
 				var files = IsSearchFile ? Enumerable.Range(0, 1).Select(_ => _mainViewModel.SelectedFile) : _mainViewModel.OpenFiles;
 				_finder = new ByteFinder(files, bytes, ByteFinderOptions.FromStart);
-				OnPropertyChanged(nameof(FindResults));
+				RaisePropertyChanged(nameof(FindResults));
 
 			}, () => IsStringSearch && !string.IsNullOrEmpty(SearchString) || IsBytesSearch && HexEdit?.Size > 0)
 				.ObservesProperty(() => IsStringSearch).ObservesProperty(() => IsBytesSearch).ObservesProperty(() => SearchString);
