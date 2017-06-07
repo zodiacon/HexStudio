@@ -9,6 +9,6 @@
         mc:Ignorable="d"
         BorderBrush="{DynamicResource AccentColorBrush}" BorderThickness="1"
         Title="Hex Studio - (C)2016 by Pavel Yosifovich" TitleCaps="False" MinHeight="350" MinWidth="450" SaveWindowPosition="True"
-                   Closing="MetroWindow_Closing">
+                   Closing="MetroWindow_Closing" Icon="/icons/app.ico">
     <view:MainView />
 </metro:MetroWindow>
